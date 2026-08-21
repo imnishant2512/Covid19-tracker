@@ -9,6 +9,7 @@ body {
 .app {
   display: flex;
   justify-content: space-evenly;
+  gap: 20px;
   padding: 20px;
 }
 
@@ -16,7 +17,18 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
   margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.app__dropdown {
+  min-width: 180px;
+  background-color: #fff;
+}
+
+.app__error {
+  margin-bottom: 16px;
 }
 
 .app__stats {
@@ -26,16 +38,19 @@ body {
 
 .app__left {
   flex: 0.9;
+  min-width: 0;
 }
 
 .app__right {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .app__graphTitle {
   margin-top: 20px;
   margin-bottom: 20px;
+  text-transform: capitalize;
 }
 
 .app__right .MuiCardContent-root {
@@ -46,10 +61,40 @@ body {
 
 .app__graph {
   flex-grow: 1;
+  min-height: 260px;
+  position: relative;
+}
+
+.lineGraph__message {
+  color: #6c757d;
+  font-size: 0.9rem;
+  padding: 24px 0;
+}
+
+.errorBoundary {
+  padding: 16px;
+  margin-top: 16px;
+  border-radius: 8px;
+  background-color: #fdecea;
+  color: #611a15;
+  font-size: 0.9rem;
 }
 
 @media (max-width: 990px) {
   .app {
     flex-direction: column;
   }
+
+  .app__stats {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .infoBox:not(:last-child) {
+    margin-right: 0;
+  }
+}
+
+.map--placeholder {
+  background-color: #fff;
 }

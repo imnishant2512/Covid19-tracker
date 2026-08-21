@@ -1,82 +1,69 @@
 # Covid-19 Tracker App
 
-This Project is a beginner friendly project I built using React. Some key Aspects:
+A live COVID-19 dashboard built with React and [Vite](https://vite.dev), backed by the
+public [disease.sh](https://disease.sh) API.
 
-- Shows Live Cases, Recoveries, Deaths (clickable tabs)
-- Shows Worldwide cases and Country Based cases
-- Line Chart shows fluctuations over days, hover around to see exact figures
-- Clickable Markers on Map show Country stats
+- Live cases, recoveries and deaths as clickable tabs
+- Worldwide totals plus per-country breakdowns
+- Interactive Leaflet map with per-country circles scaled and coloured by the selected metric
+- 120-day trend chart of day-over-day change — hover for exact figures
 
-Deployed live on https://covid19-tracker-c92c2.web.app/ . Check out!
+Deployed live at https://covid19-tracker-c92c2.web.app/
 
-![](Screenshot(47).PNG)
-# Getting Started with Create React App
+![Screenshot of the Covid-19 Tracker dashboard](screenshot.png)
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Getting started
 
-## Available Scripts
+Requires Node 20.19+ or 22.12+ (Vite 7).
 
-In the project directory, you can run:
+```bash
+npm install
+npm run dev
+```
 
-### `npm start`
+The app runs at http://localhost:5173.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## Scripts
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+| Script | What it does |
+| --- | --- |
+| `npm run dev` | Start the dev server with hot module replacement |
+| `npm run build` | Production build into `build/` |
+| `npm run preview` | Serve the production build locally |
+| `npm test` | Run the Vitest suite once |
+| `npm run test:watch` | Run tests in watch mode |
+| `npm run lint` | Lint with ESLint |
 
-### `npm test`
+## Project layout
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```
+index.html            Vite entry point
+vite.config.js        Build + Vitest config
+src/
+  main.jsx            React root (createRoot)
+  App.jsx             All application state and layout
+  api.js              disease.sh client — throws on non-2xx, supports AbortSignal
+  util.js             Pure helpers: sorting, formatting, chart deltas, circle radius
+  components/
+    InfoBox.jsx       Selectable stat card (keyboard accessible)
+    Map.jsx           Leaflet map, circles and popups
+    Table.jsx         Country table sorted by total cases
+    LineGraph.jsx     Chart.js trend chart
+    ErrorBoundary.jsx Keeps a panel crash from blanking the page
+  __tests__/          Vitest + Testing Library specs
+```
 
-### `npm run build`
+## Deployment
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+The build output goes to `build/`, which is what `firebase.json` serves:
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```bash
+npm run build
+firebase deploy
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## A note on the data
 
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+`disease.sh` stopped receiving recovery figures from most upstream sources during
+2021, so the **Recovered** tab reports zero or stale values for many countries.
+That is a limitation of the data, not of the app.

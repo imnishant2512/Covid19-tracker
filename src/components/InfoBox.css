@@ -1,0 +1,63 @@
+.infoBox {
+  flex: 1;
+  border-top: 10px solid transparent;
+}
+
+.infoBox:not(:last-child) {
+  margin-right: 15px;
+}
+
+.infoBox .MuiCardActionArea-root {
+  height: 100%;
+}
+
+.infoBox__cases {
+  color: #cc1034;
+  font-weight: 600;
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+  min-height: 2.1rem;
+}
+
+.infoBox--selected {
+  border-top-color: greenyellow;
+}
+
+.infoBox__cases--green {
+  color: #4caf50;
+}
+
+.infoBox__cases--grey {
+  color: grey;
+}
+
+.infoBox__total {
+  color: #6c757d;
+  font-weight: 700 !important;
+  font-size: 0.8rem !important;
+  margin-top: 15px !important;
+}
+
+/* Replaces the Font Awesome spinner, which cost a render-blocking CDN
+   stylesheet for a single glyph. */
+.infoBox__spinner {
+  display: inline-block;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 3px solid rgba(0, 0, 0, 0.15);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: infoBox-spin 0.8s linear infinite;
+}
+
+@keyframes infoBox-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .infoBox__spinner {
+    animation-duration: 3s;
+  }
+}
