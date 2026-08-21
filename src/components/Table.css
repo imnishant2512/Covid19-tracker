@@ -1,0 +1,33 @@
+.table {
+  margin-top: 20px;
+  overflow-y: auto;
+  max-height: 400px;
+  color: #6a5d5d;
+  background-color: #fff;
+}
+
+.table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table__caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 0.5rem;
+}
+
+.table td:last-child {
+  text-align: right;
+}
+
+.table tr:nth-of-type(odd) {
+  background-color: #f3f2f8;
+}
