@@ -1,73 +1,68 @@
-import React from "react";
 import numeral from "numeral";
-import { Circle, Popup } from "react-leaflet";
 
-const casesTypeColors = {
+export const WORLDWIDE = "worldwide";
+
+/** Leaflet's default world view, used whenever no single country is selected. */
+export const WORLD_VIEW = { center: [20, 10], zoom: 2 };
+
+export const COUNTRY_ZOOM = 4;
+
+export const casesTypeColors = {
   cases: {
-    hex: "#CC1034",
-    // rgb: "rgb(204,16,52)",
-    // half_op: "rgba(204,16,52,0.5)",
-    mulitiplier: 800,
+    hex: "#cc1034",
+    multiplier: 800,
   },
-
   recovered: {
-    hex: "#7DD71D",
-    // rgb: "rgb(125,215,29)",
-    // half_op: "rgba(125,215,29,0.5)",
-    mulitiplier: 1200,
+    hex: "#7dd71d",
+    multiplier: 1200,
   },
-
   deaths: {
-    hex: "#C0C0C0",
-    // rgb: "rgb(251,68,67)",
-    // half_op: "rgba(251,68,67,0.5)",
-    mulitiplier: 2000,
+    hex: "#c0c0c0",
+    multiplier: 2000,
   },
 };
 
-export const sortData = (data) => {
-  const sortedData = [...data];
-
-  sortedData.sort((a, b) => b.cases - a.cases);
-
-  return sortedData;
+/** "#cc1034" -> "rgba(204, 16, 52, 0.5)", for chart fills derived from the palette. */
+export const withAlpha = (hex, alpha) => {
+  const value = hex.replace("#", "");
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(value.slice(i, i + 2), 16));
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
+/** Sort a copy of the country list by total cases, descending. */
+export const sortData = (data) => [...data].sort((a, b) => b.cases - a.cases);
+
+/** "+1.2m" for the today-delta figures; "+0" for null/undefined/0. */
 export const prettyPrintStat = (stat) =>
   stat ? `+${numeral(stat).format("0.0a")}` : "+0";
 
-//Draw circles on the map
-export const showDataOnMap = (data, casesType) =>
-  data.map((country) => (
-    <Circle
-      center={[country.countryInfo.lat, country.countryInfo.long]}
-      fillOpacity={0.4}
-      pathOptions={{
-        color: casesTypeColors[casesType].hex,
-        fillColor: casesTypeColors[casesType].hex,
-      }}
-      radius={
-        Math.sqrt(country[casesType] / 10) *
-        casesTypeColors[casesType].mulitiplier
-      }
-    >
-      <Popup>
-        <div className="info-container">
-          <div
-            className="info-flag"
-            style={{ backgroundImage: `url(${country.countryInfo.flag})` }}
-          />
-          <div className="info-name">{country.country}</div>
-          <div className="info-confirmed">
-            Cases: {numeral(country.cases).format("0,0")}
-          </div>
-          <div className="info-recovered">
-            Recovered: {numeral(country.recovered).format("0,0")}
-          </div>
-          <div className="info-deaths">
-            Deaths: {numeral(country.deaths).format("0,0")}
-          </div>
-        </div>
-      </Popup>
-    </Circle>
-  ));
+/** "1,234,567" — no zero padding. */
+export const formatNumber = (value) => numeral(value ?? 0).format("0,0");
+
+/** Circle radius in metres, scaled so small and large countries stay legible. */
+export const circleRadius = (country, casesType) =>
+  Math.sqrt(Math.max(country[casesType] ?? 0, 0) / 10) *
+  casesTypeColors[casesType].multiplier;
+
+/**
+ * Turn a cumulative {date: total} series into day-over-day deltas.
+ *
+ * Iterates the *selected* series rather than `data.cases`, so a series with a
+ * different set of dates can't silently produce NaN points.
+ */
+export const buildChartData = (data, casesType) => {
+  const series = data?.[casesType];
+  if (!series) return [];
+
+  const chartData = [];
+  let lastDataPoint;
+
+  for (const date in series) {
+    if (lastDataPoint !== undefined) {
+      chartData.push({ x: date, y: series[date] - lastDataPoint });
+    }
+    lastDataPoint = series[date];
+  }
+
+  return chartData;
+};
