@@ -1,0 +1,12 @@
+# Normalise line endings so they do not depend on each contributor's
+# core.autocrlf setting. Without this, a Windows clone with autocrlf=false
+# commits CRLF, which produces noise in diffs and breaks the shell blocks in
+# .github/workflows on Linux runners.
+* text=auto eol=lf
+
+# Binary assets must never be line-ending converted.
+*.png binary
+*.ico binary
+*.jpg binary
+*.woff binary
+*.woff2 binary
