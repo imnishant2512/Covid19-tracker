@@ -1,0 +1,94 @@
+name: Publish release
+
+# Creating a GitHub Release needs an authenticated API call. Actions is given a
+# token automatically, so publishing happens here rather than by hand — which
+# also keeps the notes derived from CHANGELOG.md instead of retyped.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to publish. Leave empty to backfill every tag that has no release yet."
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Publish release notes from the changelog
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Tags are needed to work out which ones still lack a release.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Work out which tags to publish
+        id: plan
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            TAGS="${GITHUB_REF#refs/tags/}"
+          elif [ -n "${{ inputs.tag }}" ]; then
+            TAGS="${{ inputs.tag }}"
+          else
+            # Backfill: every v* tag that does not already have a release.
+            TAGS=""
+            for TAG in $(git tag -l "v*" --sort=version:refname); do
+              if gh release view "$TAG" >/dev/null 2>&1; then
+                echo "$TAG already has a release, skipping."
+              else
+                TAGS="$TAGS $TAG"
+              fi
+            done
+          fi
+
+          echo "Tags to publish:${TAGS:- none}"
+          echo "tags=$(echo $TAGS | xargs)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Create the releases
+        if: steps.plan.outputs.tags != ''
+        run: |
+          for TAG in ${{ steps.plan.outputs.tags }}; do
+            echo "::group::$TAG"
+
+            # Fails loudly if the changelog has no section for this tag, rather
+            # than publishing a release with empty notes.
+            node scripts/changelog-section.mjs "$TAG" > notes.md
+            echo "Notes: $(wc -l < notes.md) lines"
+
+            LATEST=""
+            if [ "$TAG" = "$(git tag -l 'v*' --sort=version:refname | tail -1)" ]; then
+              LATEST="--latest"
+            fi
+
+            gh release create "$TAG" \
+              --title "$TAG" \
+              --notes-file notes.md \
+              --verify-tag \
+              $LATEST
+
+            echo "::endgroup::"
+          done
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Summary
+        run: |
+          {
+            echo "### Releases"
+            echo
+            gh release list --limit 20 || echo "none"
+          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          GH_TOKEN: ${{ github.token }}
