@@ -33,7 +33,10 @@ function InfoBox({
             {title}
           </Typography>
 
-          <h2
+          {/* Deliberately not a heading: this is a bare figure ("+1.2k"), and
+              exposing it to heading navigation announced a number with no
+              context. The card's label lives on the button above. */}
+          <p
             className={cx(
               "infoBox__cases",
               !isRed && "infoBox__cases--green",
@@ -45,7 +48,7 @@ function InfoBox({
             ) : (
               cases
             )}
-          </h2>
+          </p>
 
           <Typography className="infoBox__total" color="textSecondary">
             {total} Total
