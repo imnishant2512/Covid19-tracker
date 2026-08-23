@@ -4,15 +4,10 @@
  * @vitest-environment node
  */
 import { describe, expect, it } from "vitest";
-import {
-  METRICS,
-  buildChartData,
-  circleRadius,
-  formatNumber,
-  prettyPrintStat,
-  sortByMetric,
-  withAlpha,
-} from "../util";
+import { METRICS, circleRadius, sortByMetric } from "../lib/metrics";
+import { formatNumber, prettyPrintStat } from "../lib/format";
+import { buildChartData } from "../lib/chart";
+import { withAlpha } from "../theme";
 
 const COUNTRIES = [
   { code: "AA", cases: 5, newCases: 90, deaths: 3 },

@@ -1,23 +1,11 @@
 /**
  * Builds the COVID data snapshot that ships with the app.
  *
- * Why a build step rather than a runtime API call: as of 2026 no public source
- * is simultaneously current, CORS-enabled and small.
+ * Fetches WHO's weekly file, joins it with country geometry, and writes a small
+ * JSON the browser can load in one same-origin request.
  *
- *   - disease.sh is CORS-friendly and small, but its upstreams (JHU CSSE and
- *     Worldometers) stopped publishing, so its figures freeze at 2023-03-09
- *     and its own endpoints disagree by ~28 million cases.
- *   - WHO publishes current figures but serves them from Azure blob storage
- *     with no CORS headers (preflight returns 403), so a browser cannot read it.
- *   - Our World in Data is current and does send CORS, but only as a 17 MB CSV
- *     with no server-side filtering.
- *
- * Running on a build machine removes both constraints: fetch the authoritative
- * WHO file, aggregate it, and emit a small JSON the browser can load instantly.
- *
- * WHO carries no coordinates or flags, so country geometry is taken from
- * disease.sh. That metadata is static — borders do not go stale the way case
- * counts do.
+ * See docs/data-source.md for why this runs at build time rather than the app
+ * calling an API directly, and for what the choice of source implies.
  *
  * Usage: npm run build:data
  */

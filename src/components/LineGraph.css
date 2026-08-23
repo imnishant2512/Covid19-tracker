@@ -1,0 +1,5 @@
+.lineGraph__message {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: var(--space-5) 0;
+}

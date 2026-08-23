@@ -1,12 +1,18 @@
 import { useEffect } from "react";
 import { MapContainer, TileLayer, Circle, Popup, useMap } from "react-leaflet";
-import { METRICS, circleRadius, formatNumber } from "../util";
+import { METRICS, circleRadius } from "../lib/metrics";
+import { formatNumber } from "../lib/format";
 import "leaflet/dist/leaflet.css";
 import "./Map.css";
 
 /**
  * react-leaflet v3+ treats MapContainer's `center`/`zoom` as initial values only,
  * so changing the selected country needs an imperative move.
+ */
+/**
+ * @param {object} props
+ * @param {[number, number]} props.center
+ * @param {number} props.zoom
  */
 function Recenter({ center, zoom }) {
   const map = useMap();
@@ -18,13 +24,19 @@ function Recenter({ center, zoom }) {
   return null;
 }
 
+/**
+ * @param {object} props
+ * @param {Array<{code: string, name: string, lat: number, long: number, flag: string,
+ *   cases: number, deaths: number, newCases: number, newDeaths: number}>} props.countries
+ * @param {string} props.metric
+ */
 function CountryCircles({ countries, metric }) {
   const { hex } = METRICS[metric];
 
   return countries.map((country) => (
     <Circle
       key={country.code}
-      center={[country.lat, country.long]}
+      center={/** @type {[number, number]} */ ([country.lat, country.long])}
       fillOpacity={0.4}
       pathOptions={{ color: hex, fillColor: hex }}
       radius={circleRadius(country, metric)}
@@ -51,6 +63,13 @@ function CountryCircles({ countries, metric }) {
   ));
 }
 
+/**
+ * @param {object} props
+ * @param {Array<object>} props.countries
+ * @param {string} props.metric
+ * @param {[number, number]} props.center
+ * @param {number} props.zoom
+ */
 function Map({ countries, metric, center, zoom }) {
   return (
     <div className="map">

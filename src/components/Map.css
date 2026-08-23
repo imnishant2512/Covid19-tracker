@@ -1,15 +1,15 @@
 .map {
   height: 500px;
-  background-color: white;
-  padding: 1rem;
-  border-radius: 20px;
-  margin-top: 16px;
-  box-shadow: 0 0 8px -4px rgba(0, 0, 0, 0.5);
+  background-color: var(--surface);
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  margin-top: var(--space-3);
+  box-shadow: var(--shadow-card);
 }
 
 .map .leaflet-container {
   height: 100%;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
 }
 
 .info-container {
@@ -20,18 +20,18 @@
   height: 80px;
   width: 100%;
   background-size: cover;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 .info-name {
   font-size: 20px;
   font-weight: bold;
-  color: #555;
+  color: var(--text);
 }
 
 .info-confirmed,
 .info-recovered,
 .info-deaths {
   font-size: 16px;
-  margin-top: 5px;
+  margin-top: var(--space-1);
 }

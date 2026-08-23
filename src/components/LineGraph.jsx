@@ -10,11 +10,16 @@ import {
   Tooltip,
 } from "chart.js";
 import "chartjs-adapter-date-fns";
-import numeral from "numeral";
-import { METRICS, buildChartData, withAlpha } from "../util";
+import { METRICS } from "../lib/metrics";
+import { buildChartData, toTimestamp } from "../lib/chart";
+import { formatAxisTick, formatDelta } from "../lib/format";
+import { palette, paletteDark, withAlpha } from "../theme";
+import { useColorScheme } from "../hooks/useColorScheme";
+import "./LineGraph.css";
 
 ChartJS.register(LinearScale, TimeScale, PointElement, LineElement, Filler, Tooltip);
 
+/** @type {import("chart.js").ChartOptions<"line">} */
 const options = {
   responsive: true,
   maintainAspectRatio: false,
@@ -24,7 +29,7 @@ const options = {
     legend: { display: false },
     tooltip: {
       callbacks: {
-        label: (context) => numeral(context.parsed.y).format("+0,0"),
+        label: (context) => formatDelta(context.parsed.y),
       },
     },
   },
@@ -40,28 +45,27 @@ const options = {
     y: {
       grid: { display: false },
       ticks: {
-        // Integer ticks only, and abbreviate just the large ones. Formatting
-        // everything as "0a" collapsed small ranges into repeated labels
-        // (6.5, 7.0 and 7.4 all rendered as "7").
+        // Integer ticks only: Chart.js was otherwise free to pick fractional
+        // ones (6.5, 6.8, 7.0) which all rounded to the same label.
         precision: 0,
-        callback: (value) =>
-          Math.abs(value) >= 1000
-            ? numeral(value).format("0.[0]a")
-            : numeral(value).format("0,0"),
+        callback: formatAxisTick,
       },
     },
   },
 };
 
+/**
+ * Weekly trend for the selected metric.
+ *
+ * @param {object}   props
+ * @param {Array<[string, number, number]>} [props.weeks] [date, newCases, newDeaths]
+ * @param {string}   props.metric      Key into METRICS.
+ * @param {string}   [props.className]
+ */
 function LineGraph({ weeks, metric, className }) {
-  // The snapshot ships ISO dates, which the date adapter parses directly — the
-  // previous source used "M/D/YY" strings that needed explicit parsing.
+  const scheme = useColorScheme();
   const points = useMemo(
-    () =>
-      buildChartData(weeks, metric).map(({ x, y }) => ({
-        x: new Date(`${x}T00:00:00Z`).getTime(),
-        y,
-      })),
+    () => buildChartData(weeks, metric).map(({ x, y }) => ({ x: toTimestamp(x), y })),
     [weeks, metric]
   );
 
@@ -75,7 +79,11 @@ function LineGraph({ weeks, metric, className }) {
     );
   }
 
-  const { hex, weekIndex } = METRICS[metric];
+  // The chart draws to a canvas on the card surface, so it needs the palette
+  // for the active scheme. The map keeps the light palette regardless, because
+  // its circles sit on light OpenStreetMap tiles either way.
+  const { weekIndex } = METRICS[metric];
+  const hex = (scheme === "dark" ? paletteDark : palette)[metric];
   const seriesLabel = weekIndex === 2 ? "New deaths" : "New cases";
 
   return (

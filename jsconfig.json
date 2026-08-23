@@ -1,0 +1,42 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "noUnusedLocals": true,
+    "noFallthroughCasesInSwitch": true,
+    "types": [
+      "vitest/globals",
+      "node",
+      "vite/client"
+    ],
+    "maxNodeModuleJsDepth": 0
+  },
+  "include": [
+    "src",
+    "scripts",
+    "e2e",
+    "vite.config.js",
+    "eslint.config.js",
+    "playwright.config.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "build",
+    "coverage",
+    "test-results",
+    "playwright-report"
+  ]
+}

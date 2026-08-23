@@ -26,7 +26,7 @@ vi.mock("../components/LineGraph", () => ({
 
 const selectCountry = async (user, name) => {
   await user.click(screen.getByLabelText("Select a country"));
-  await user.click(await screen.findByRole("option", { name, exact: true }));
+  await user.click(await screen.findByRole("option", { name }));
 };
 
 beforeEach(() => {
@@ -56,7 +56,7 @@ describe("App", () => {
 
     // Country selection is a local lookup; the old build issued a request per
     // country and another per metric change.
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
   });
 
   it("orders the table by the selected metric", async () => {
@@ -152,7 +152,7 @@ describe("App", () => {
     const { unmount } = render(<App />);
     unmount();
 
-    const { signal } = fetch.mock.calls[0][1];
+    const { signal } = vi.mocked(fetch).mock.calls[0][1];
     await waitFor(() => expect(signal.aborted).toBe(true));
   });
 });

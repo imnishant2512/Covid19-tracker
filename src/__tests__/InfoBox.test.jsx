@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import InfoBox from "../components/InfoBox";
-import { METRICS } from "../util";
+import { METRICS } from "../lib/metrics";
 
 const renderBox = (props = {}) =>
   render(
@@ -48,11 +48,23 @@ describe("InfoBox", () => {
     );
   });
 
-  it("colours the figure to match its metric on the map", () => {
+  it("publishes its metric colour as a custom property", () => {
+    // The card sets --metric-color; the stylesheet uses it for both the figure
+    // and the selected indicator, so the two cannot drift apart.
     const { container } = renderBox({ metric: "deaths" });
-    expect(container.querySelector(".infoBox__value")).toHaveStyle({
-      color: METRICS.deaths.hex,
-    });
+    const card = /** @type {HTMLElement} */ (container.querySelector(".infoBox"));
+
+    expect(card.style.getPropertyValue("--metric-color")).toBe(METRICS.deaths.hex);
+  });
+
+  it("gives each metric a distinct colour", () => {
+    const colourOf = (metric) =>
+      /** @type {HTMLElement} */ (
+        renderBox({ metric }).container.querySelector(".infoBox")
+      ).style.getPropertyValue("--metric-color");
+
+    const colours = ["cases", "newCases", "deaths"].map(colourOf);
+    expect(new Set(colours).size).toBe(3);
   });
 
   it("shows a spinner instead of the figure while loading", () => {

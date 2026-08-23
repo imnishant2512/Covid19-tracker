@@ -1,56 +1,51 @@
-* {
-  margin: 0;
-}
-
-body {
-  background-color: #f5f6fa;
-}
-
 .app {
-  display: flex;
-  justify-content: space-evenly;
-  gap: 20px;
-  padding: 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: var(--space-4);
+  padding: var(--space-4);
+  align-items: start;
+}
+
+.app__left {
+  min-width: 0;
 }
 
 .app__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
   flex-wrap: wrap;
+}
+
+.app__title {
+  font-size: clamp(1.5rem, 1.1rem + 1.6vw, 2.25rem);
+  line-height: 1.15;
+}
+
+.app__panelTitle {
+  font-size: 1.125rem;
+  line-height: 1.3;
 }
 
 .app__dropdown {
   min-width: 180px;
-  background-color: #fff;
+  background-color: var(--surface);
 }
 
 .app__error {
-  margin-bottom: 16px;
+  margin-bottom: var(--space-3);
 }
 
 .app__stats {
-  display: flex;
-  justify-content: space-between;
-}
-
-.app__left {
-  flex: 0.9;
-  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
 }
 
 .app__right {
-  display: flex;
-  flex-direction: column;
   min-width: 0;
-}
-
-.app__graphTitle {
-  margin-top: 20px;
-  margin-bottom: 20px;
-  text-transform: capitalize;
 }
 
 .app__right .MuiCardContent-root {
@@ -59,49 +54,50 @@ body {
   flex-grow: 1;
 }
 
+.app__graphTitle {
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-4);
+  text-transform: capitalize;
+}
+
 .app__graph {
   flex-grow: 1;
   min-height: 260px;
   position: relative;
 }
 
-.lineGraph__message {
-  color: #6c757d;
-  font-size: 0.9rem;
-  padding: 24px 0;
-}
-
-.errorBoundary {
-  padding: 16px;
-  margin-top: 16px;
-  border-radius: 8px;
-  background-color: #fdecea;
-  color: #611a15;
-  font-size: 0.9rem;
-}
-
-@media (max-width: 990px) {
-  .app {
-    flex-direction: column;
-  }
-
-  .app__stats {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .infoBox:not(:last-child) {
-    margin-right: 0;
-  }
-}
-
 .map--placeholder {
-  background-color: #fff;
+  background-color: var(--surface);
 }
 
 .app__provenance {
-  margin-top: 16px;
-  color: #6c757d;
+  margin-top: var(--space-3);
+  color: var(--text-muted);
   font-size: 0.75rem;
   line-height: 1.5;
+}
+
+/*
+ * Three steps rather than the single 990px jump the layout used to have, which
+ * left every tablet-width viewport with the cramped desktop grid.
+ */
+@media (max-width: 1100px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .app {
+    padding: var(--space-3);
+    gap: var(--space-3);
+  }
+
+  .app__stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app__dropdown {
+    width: 100%;
+  }
 }

@@ -1,9 +1,18 @@
 .table {
-  margin-top: 20px;
+  margin-top: var(--space-4);
   overflow-y: auto;
   max-height: 400px;
-  color: #6a5d5d;
-  background-color: #fff;
+  background-color: var(--surface);
+
+  /*
+   * A shadow that appears only when there is more to scroll, so the list does
+   * not look like it simply ends at the fold.
+   */
+  background-image: linear-gradient(to top, rgb(0 0 0 / 12%), transparent 12px);
+  background-repeat: no-repeat;
+  background-position: bottom;
+  background-size: 100% 12px;
+  background-attachment: local, scroll;
 }
 
 .table table {
@@ -21,13 +30,27 @@
 }
 
 .table td {
-  padding: 0.5rem;
+  padding: var(--space-2);
+  vertical-align: top;
+}
+
+/*
+ * The name column takes the slack and wraps; the figure column shrinks to its
+ * content. Without this, a long name such as "United Kingdom of Great Britain
+ * and Northern Ireland" pushed the figure out of the row and was clipped.
+ */
+.table td:first-child {
+  width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .table td:last-child {
+  width: 1%;
+  white-space: nowrap;
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .table tr:nth-of-type(odd) {
-  background-color: #f3f2f8;
+  background-color: var(--surface-alt);
 }

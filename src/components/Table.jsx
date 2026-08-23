@@ -1,4 +1,5 @@
-import { METRICS, formatNumber } from "../util";
+import { METRICS } from "../lib/metrics";
+import { formatNumber } from "../lib/format";
 import "./Table.css";
 
 function Table({ countries, metric }) {

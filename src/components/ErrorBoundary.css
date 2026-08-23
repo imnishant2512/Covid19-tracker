@@ -1,0 +1,8 @@
+.errorBoundary {
+  padding: var(--space-3);
+  margin-top: var(--space-3);
+  border-radius: var(--radius-sm);
+  background-color: var(--danger-bg);
+  color: var(--danger-text);
+  font-size: 0.9rem;
+}
