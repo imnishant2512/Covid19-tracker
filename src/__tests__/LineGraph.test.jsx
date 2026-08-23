@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import LineGraph from "../components/LineGraph";
-import { METRICS } from "../util";
+import { METRICS } from "../lib/metrics";
 import { SNAPSHOT } from "./fixtures";
 
 // Chart.js needs a real canvas, which jsdom lacks. Stubbing the renderer lets

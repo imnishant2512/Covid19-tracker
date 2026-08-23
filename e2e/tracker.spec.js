@@ -15,7 +15,8 @@ const tileZooms = (page) =>
   page.evaluate(() => [
     ...new Set(
       [...document.querySelectorAll("img.leaflet-tile")]
-        .map((img) => img.src.match(/tile\.openstreetmap\.org\/(\d+)\//)?.[1])
+        .map((img) => /** @type {HTMLImageElement} */ (img).src)
+        .map((src) => src.match(/tile\.openstreetmap\.org\/(\d+)\//)?.[1])
         .filter(Boolean)
         .map(Number)
     ),
@@ -106,7 +107,8 @@ test("renders the trend chart on a canvas", async ({ page }) => {
   await expect(canvas).toBeVisible();
 
   // Chart.js draws nothing if the date adapter fails to parse the ISO dates.
-  const isPainted = await canvas.evaluate((el) => {
+  const isPainted = await canvas.evaluate((node) => {
+    const el = /** @type {HTMLCanvasElement} */ (node);
     const ctx = el.getContext("2d");
     const { data } = ctx.getImageData(0, 0, el.width, el.height);
     return data.some((channel, i) => i % 4 === 3 && channel !== 0);
@@ -181,6 +183,25 @@ test("logs no console errors during a normal session", async ({ page }) => {
   await page.getByRole("button", { name: /deaths/i }).click();
 
   expect(errors).toEqual([]);
+});
+
+test("keeps long country names inside their row", async ({ page }) => {
+  const table = page.locator(".table");
+  const row = page.locator("tbody tr", {
+    hasText: "United Kingdom of Great Britain and Northern Ireland",
+  });
+  await expect(row).toBeVisible();
+
+  const figure = row.locator("td").last();
+  await expect(figure).toHaveText("25,118,755");
+
+  // Regression: with the name column set to nowrap the row grew wider than its
+  // container and pushed the figure past the right edge, where it was clipped.
+  // Comparing box geometry catches that; scrollWidth on a <tr> does not.
+  const container = await table.boundingBox();
+  const box = await figure.boundingBox();
+
+  expect(box.x + box.width).toBeLessThanOrEqual(container.x + container.width + 1);
 });
 
 test("is usable at a mobile viewport", async ({ page }) => {

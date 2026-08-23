@@ -1,4 +1,5 @@
 import { Component } from "react";
+import "./ErrorBoundary.css";
 
 /**
  * Keeps a render-time crash in the map or chart from blanking the whole page.

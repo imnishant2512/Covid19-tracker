@@ -34,6 +34,17 @@ export const SNAPSHOT = {
       newCases: 90000,
       newDeaths: 2,
     },
+    {
+      code: "GB",
+      name: "United Kingdom of Great Britain and Northern Ireland",
+      lat: 54,
+      long: -2,
+      flag: "https://disease.sh/assets/img/flags/gb.png",
+      cases: 25118755,
+      deaths: 220000,
+      newCases: 300,
+      newDeaths: 1,
+    },
   ],
   weeks: Array.from({ length: 60 }, (_, i) => {
     const date = new Date(Date.UTC(2025, 5, 1) + i * 7 * 86400000);

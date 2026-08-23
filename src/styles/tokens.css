@@ -1,0 +1,72 @@
+/**
+ * Design tokens.
+ *
+ * Every colour, radius and spacing step used by the app is declared here so a
+ * value is defined once rather than being retyped as a hex literal in each
+ * stylesheet. src/theme.js mirrors the metric colours for the JavaScript that
+ * needs them (Leaflet circles and Chart.js datasets, which take values rather
+ * than CSS), and a unit test asserts the two never drift apart.
+ */
+:root {
+  /* Metric colours. Each is at least 4.5:1 on --surface, so the large figures
+     on the stat cards meet WCAG AA rather than only the large-text exemption. */
+  --metric-cases: #cc1034;
+  --metric-new-cases: #a16207;
+  --metric-deaths: #6c757d;
+
+  --page-bg: #f5f6fa;
+  --surface: #ffffff;
+  --surface-alt: #f3f2f8;
+
+  --text: #1f2328;
+  --text-muted: #6c757d;
+
+  --border: #e3e6ea;
+  --focus-ring: #0b62d0;
+
+  --danger-bg: #fdecea;
+  --danger-text: #611a15;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 20px;
+  --space-5: 32px;
+
+  --shadow-card: 0 0 8px -4px rgb(0 0 0 / 50%);
+}
+
+/*
+ * Dark scheme.
+ *
+ * The metric colours are redefined rather than reused: a single colour cannot
+ * meet 4.5:1 against both white and a dark surface, because the luminance a
+ * colour needs to be dark enough for white (<= 0.18) and light enough for a
+ * dark ground (>= 0.24) do not overlap.
+ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --metric-cases: #ff7a8a;
+    --metric-new-cases: #e8b339;
+    --metric-deaths: #aeb6bf;
+
+    --page-bg: #12161a;
+    --surface: #1b2027;
+    --surface-alt: #222831;
+
+    --text: #e6e9ec;
+    --text-muted: #a4adb8;
+
+    --border: #2c333c;
+    --focus-ring: #7cb0ff;
+
+    --danger-bg: #3a1d1a;
+    --danger-text: #ffb4a9;
+
+    --shadow-card: 0 0 10px -4px rgb(0 0 0 / 80%);
+  }
+}

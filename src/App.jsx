@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useMemo, useState } from "react";
 import {
   Alert,
   Card,
@@ -10,17 +10,16 @@ import {
 import InfoBox from "./components/InfoBox";
 import Table from "./components/Table";
 import ErrorBoundary from "./components/ErrorBoundary";
-import { fetchSnapshot, isAbort } from "./api";
+import { useSnapshot } from "./hooks/useSnapshot";
 import {
   COUNTRY_ZOOM,
   METRICS,
   METRIC_KEYS,
   WORLDWIDE,
   WORLD_VIEW,
-  formatNumber,
-  prettyPrintStat,
   sortByMetric,
-} from "./util";
+} from "./lib/metrics";
+import { formatNumber, prettyPrintStat } from "./lib/format";
 import "./App.css";
 
 // Leaflet and Chart.js together are ~60% of the bundle and neither is needed
@@ -29,33 +28,13 @@ const Map = lazy(() => import("./components/Map"));
 const LineGraph = lazy(() => import("./components/LineGraph"));
 
 function App() {
-  const [snapshot, setSnapshot] = useState(null);
+  const { snapshot, error, isLoading } = useSnapshot();
   const [country, setCountry] = useState(WORLDWIDE);
   const [metric, setMetric] = useState("cases");
-  const [error, setError] = useState(null);
-
-  // One same-origin request for the whole dataset. Selecting a country is then
-  // a local lookup rather than another round trip.
-  useEffect(() => {
-    const controller = new AbortController();
-
-    fetchSnapshot(controller.signal)
-      .then((data) => {
-        setSnapshot(data);
-        setError(null);
-      })
-      .catch((err) => {
-        if (isAbort(err)) return;
-        setError(err);
-      });
-
-    return () => controller.abort();
-  }, []);
 
   // Memoised: `?? []` would otherwise hand a fresh array to every dependent
   // memo on each render.
   const countries = useMemo(() => snapshot?.countries ?? [], [snapshot]);
-  const isLoading = snapshot === null && !error;
 
   const selected = useMemo(() => {
     if (country === WORLDWIDE) return snapshot?.global ?? {};
@@ -75,14 +54,17 @@ function App() {
     const match = countries.find((entry) => entry.code === country);
     if (!match) return WORLD_VIEW;
 
-    return { center: [match.lat, match.long], zoom: COUNTRY_ZOOM };
+    return {
+      center: /** @type {[number, number]} */ ([match.lat, match.long]),
+      zoom: COUNTRY_ZOOM,
+    };
   }, [country, countries]);
 
   return (
     <div className="app">
       <div className="app__left">
-        <div className="app__header">
-          <h1>Covid-19 tracker</h1>
+        <header className="app__header">
+          <h1 className="app__title">Covid-19 tracker</h1>
           <FormControl className="app__dropdown" size="small">
             <Select
               variant="outlined"
@@ -98,7 +80,7 @@ function App() {
               ))}
             </Select>
           </FormControl>
-        </div>
+        </header>
 
         {error && (
           <Alert severity="error" className="app__error">
@@ -137,14 +119,16 @@ function App() {
         </ErrorBoundary>
       </div>
 
-      <Card className="app__right">
+      <Card className="app__right" component="section">
         <CardContent>
-          <h3>Countries by {METRICS[metric].label.toLowerCase()}</h3>
+          <h2 className="app__panelTitle">
+            Countries by {METRICS[metric].label.toLowerCase()}
+          </h2>
           <Table countries={tableData} metric={metric} />
 
-          <h3 className="app__graphTitle">
+          <h2 className="app__panelTitle app__graphTitle">
             Worldwide weekly {metric === "deaths" ? "deaths" : "cases"}
-          </h3>
+          </h2>
           <ErrorBoundary fallback="The chart couldn’t be displayed.">
             <Suspense
               fallback={<p className="lineGraph__message">Loading chart…</p>}

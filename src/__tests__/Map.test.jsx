@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
 import L from "leaflet";
 import Map from "../components/Map";
-import { METRICS } from "../util";
+import { METRICS } from "../lib/metrics";
 import { SNAPSHOT } from "./fixtures";
 
 const renderMap = (metric = "cases", props = {}) =>
@@ -81,7 +81,7 @@ describe("Map recentring", () => {
 
   it("does not re-fly when only the metric changes", () => {
     const flyTo = vi.spyOn(L.Map.prototype, "flyTo");
-    const center = [20, 10];
+    const center = /** @type {[number, number]} */ ([20, 10]);
 
     const { rerender } = renderMap("cases", { center });
     flyTo.mockClear();

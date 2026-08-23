@@ -55,7 +55,7 @@ const main = async () => {
 };
 
 // Only run when invoked directly, so the export stays unit-testable.
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/").split("/").pop())) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((error) => {
     console.error(error.message);
     process.exit(1);

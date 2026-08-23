@@ -1,15 +1,17 @@
 /**
- * The app reads a snapshot generated at build time by scripts/build-data.mjs
- * rather than calling a COVID API at runtime.
+ * Loads the data snapshot generated at build time by scripts/build-data.mjs.
  *
- * No public API is currently both accurate and reachable from a browser: the
- * CORS-friendly ones (disease.sh) froze when their upstreams stopped publishing
- * in 2023, and the current ones (WHO, Our World in Data) are either CORS-blocked
- * or only available as multi-megabyte bulk files. Aggregating at build time
- * gives correct WHO figures in a 40KB same-origin file.
+ * See docs/data-source.md for why the figures are built rather than fetched
+ * from a live API.
  */
+
+/** Same-origin, so it is unaffected by the CORS limits on the upstream sources. */
 const SNAPSHOT_URL = `${import.meta.env.BASE_URL}data/covid-snapshot.json`;
 
+/**
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<object>}
+ */
 export const fetchSnapshot = async (signal) => {
   const response = await fetch(SNAPSHOT_URL, { signal });
 
