@@ -57,21 +57,34 @@ test("draws map circles in the colour of the selected metric", async ({ page }) 
   await expect(circle).toHaveAttribute("stroke", DEATHS_GREY);
 });
 
-test("fetches the dataset once for the whole session", async ({ page }) => {
+test("never refetches when switching country or metric", async ({ page }) => {
   const requests = [];
   page.on("request", (r) => {
     if (r.url().includes("covid-snapshot.json")) requests.push(r.url());
   });
 
-  await page.reload();
+  // Reload with the listener already attached and wait for the snapshot
+  // response, so the baseline is guaranteed to include at least one request
+  // and the assertion below cannot pass vacuously.
+  await Promise.all([
+    page.waitForResponse((r) => r.url().includes("covid-snapshot.json")),
+    page.reload(),
+  ]);
   await expect(page.locator("canvas")).toBeVisible();
+
+  // Compared relative to the page load rather than as an absolute count: the
+  // listener attaches after the first navigation, so a still in-flight request
+  // from it can also land here.
+  const afterLoad = requests.length;
+  expect(afterLoad).toBeGreaterThan(0);
 
   await selectCountry(page, "India");
   await page.getByRole("button", { name: /deaths/i }).click();
   await selectCountry(page, "Worldwide");
+  await expect(page.getByText("777.6m")).toBeVisible();
 
   // The previous build issued a request per country and another per metric.
-  expect(requests).toHaveLength(1);
+  expect(requests.length).toBe(afterLoad);
 });
 
 test("lazy-loads the map and chart bundles after first paint", async ({ page }) => {
