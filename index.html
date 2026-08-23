@@ -7,11 +7,13 @@
     <meta name="theme-color" content="#cc1034" />
     <meta
       name="description"
-      content="Live COVID-19 tracker: worldwide and per-country cases, recoveries and deaths, with an interactive map and 120-day trend chart."
+      content="COVID-19 dashboard using World Health Organization figures: worldwide and per-country cases and deaths, an interactive map, and a 120-week trend chart."
     />
     <link rel="apple-touch-icon" href="/logo192.png" />
     <link rel="manifest" href="/manifest.json" />
-    <link rel="preconnect" href="https://disease.sh" />
+    <!-- Country flags load from here, but only when a map popup is opened, so
+         a hint is enough; preconnect would open a connection on every visit. -->
+    <link rel="dns-prefetch" href="https://disease.sh" />
     <title>Covid-19 Tracker</title>
   </head>
   <body>
