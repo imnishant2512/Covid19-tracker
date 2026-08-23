@@ -2,53 +2,57 @@ import { describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
 import L from "leaflet";
 import Map from "../components/Map";
-import { casesTypeColors } from "../util";
+import { METRICS } from "../util";
+import { SNAPSHOT } from "./fixtures";
 
-const countries = [
-  {
-    country: "India",
-    cases: 45035393,
-    recovered: 0,
-    deaths: 533570,
-    countryInfo: { _id: 356, lat: 20, long: 77, flag: "in.png" },
-  },
-];
-
-const renderMap = (casesType) =>
+const renderMap = (metric = "cases", props = {}) =>
   render(
     <Map
-      countries={countries}
-      casesType={casesType}
+      countries={SNAPSHOT.countries}
+      metric={metric}
       center={[20, 10]}
       zoom={2}
+      {...props}
     />
   );
 
 describe("Map circles", () => {
   // Regression: the circles previously used react-leaflet v3+'s `pathOptions`
   // against react-leaflet v2, so Leaflet ignored it and every circle rendered
-  // in the default blue instead of the cases-type colour.
-  it("paints circles with the colour for the selected cases type", () => {
+  // in the default blue instead of the metric's colour.
+  it("paints circles with the colour for the selected metric", () => {
     const { container } = renderMap("cases");
     const path = container.querySelector(".leaflet-overlay-pane path");
 
     expect(path).not.toBeNull();
-    expect(path.getAttribute("stroke")).toBe(casesTypeColors.cases.hex);
-    expect(path.getAttribute("fill")).toBe(casesTypeColors.cases.hex);
+    expect(path.getAttribute("stroke")).toBe(METRICS.cases.hex);
+    expect(path.getAttribute("fill")).toBe(METRICS.cases.hex);
   });
 
-  it("uses a different colour for deaths", () => {
-    const { container } = renderMap("deaths");
-    const path = container.querySelector(".leaflet-overlay-pane path");
+  it("uses a different colour for each metric", () => {
+    const cases = renderMap("cases").container.querySelector(
+      ".leaflet-overlay-pane path"
+    );
+    const deaths = renderMap("deaths").container.querySelector(
+      ".leaflet-overlay-pane path"
+    );
 
-    expect(path.getAttribute("stroke")).toBe(casesTypeColors.deaths.hex);
-    expect(path.getAttribute("stroke")).not.toBe(casesTypeColors.cases.hex);
+    expect(cases.getAttribute("stroke")).not.toBe(deaths.getAttribute("stroke"));
+    expect(deaths.getAttribute("stroke")).toBe(METRICS.deaths.hex);
+  });
+
+  it("renders one circle per country", () => {
+    const { container } = renderMap();
+    expect(container.querySelectorAll(".leaflet-overlay-pane path")).toHaveLength(
+      SNAPSHOT.countries.length
+    );
   });
 
   it("renders a tile layer attributing OpenStreetMap", () => {
-    const { container } = renderMap("cases");
-    expect(container.querySelector(".leaflet-control-attribution").textContent)
-      .toMatch(/OpenStreetMap/);
+    const { container } = renderMap();
+    expect(
+      container.querySelector(".leaflet-control-attribution").textContent
+    ).toMatch(/OpenStreetMap/);
   });
 });
 
@@ -60,29 +64,30 @@ describe("Map recentring", () => {
   it("flies the Leaflet instance to a new centre when the props change", () => {
     const flyTo = vi.spyOn(L.Map.prototype, "flyTo");
 
-    const { rerender } = render(
-      <Map countries={countries} casesType="cases" center={[20, 10]} zoom={2} />
-    );
+    const { rerender } = renderMap("cases");
     flyTo.mockClear();
 
     rerender(
-      <Map countries={countries} casesType="cases" center={[20, 77]} zoom={4} />
+      <Map
+        countries={SNAPSHOT.countries}
+        metric="cases"
+        center={[20, 77]}
+        zoom={4}
+      />
     );
 
     expect(flyTo).toHaveBeenCalledWith([20, 77], 4, expect.anything());
   });
 
-  it("does not re-fly when unrelated props change", () => {
+  it("does not re-fly when only the metric changes", () => {
     const flyTo = vi.spyOn(L.Map.prototype, "flyTo");
     const center = [20, 10];
 
-    const { rerender } = render(
-      <Map countries={countries} casesType="cases" center={center} zoom={2} />
-    );
+    const { rerender } = renderMap("cases", { center });
     flyTo.mockClear();
 
     rerender(
-      <Map countries={countries} casesType="deaths" center={center} zoom={2} />
+      <Map countries={SNAPSHOT.countries} metric="deaths" center={center} zoom={2} />
     );
 
     expect(flyTo).not.toHaveBeenCalled();

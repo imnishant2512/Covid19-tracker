@@ -1,0 +1,49 @@
+name: Refresh COVID data
+
+# WHO publishes weekly, so check on Mondays and open a commit only when the
+# figures have actually moved. Also runnable on demand.
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    name: Regenerate the data snapshot
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Rebuild the snapshot from WHO
+        run: npm run build:data
+
+      - name: Verify the app still builds and passes against the new data
+        run: |
+          npm run lint
+          npm test
+          npm run build
+
+      - name: Commit the snapshot if it changed
+        run: |
+          if git diff --quiet -- public/data/covid-snapshot.json; then
+            echo "No change in WHO figures; nothing to commit."
+            exit 0
+          fi
+
+          UPDATED=$(node -p "require('./public/data/covid-snapshot.json').updated")
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data/covid-snapshot.json
+          git commit -m "chore(data): refresh WHO snapshot through ${UPDATED}"
+          git push

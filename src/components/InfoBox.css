@@ -11,8 +11,7 @@
   height: 100%;
 }
 
-.infoBox__cases {
-  color: #cc1034;
+.infoBox__value {
   font-weight: 600;
   font-size: 1.75rem;
   margin-bottom: 0.5rem;
@@ -23,15 +22,7 @@
   border-top-color: greenyellow;
 }
 
-.infoBox__cases--green {
-  color: #4caf50;
-}
-
-.infoBox__cases--grey {
-  color: grey;
-}
-
-.infoBox__total {
+.infoBox__context {
   color: #6c757d;
   font-weight: 700 !important;
   font-size: 0.8rem !important;

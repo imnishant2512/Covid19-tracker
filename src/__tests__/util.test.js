@@ -5,48 +5,64 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  METRICS,
   buildChartData,
   circleRadius,
   formatNumber,
   prettyPrintStat,
-  sortData,
+  sortByMetric,
   withAlpha,
 } from "../util";
 
-describe("sortData", () => {
-  it("orders by cases descending", () => {
-    const sorted = sortData([
-      { country: "A", cases: 5 },
-      { country: "B", cases: 50 },
-      { country: "C", cases: 15 },
-    ]);
+const COUNTRIES = [
+  { code: "AA", cases: 5, newCases: 90, deaths: 3 },
+  { code: "BB", cases: 50, newCases: 1, deaths: 30 },
+  { code: "CC", cases: 15, newCases: 40, deaths: 1 },
+];
 
-    expect(sorted.map((entry) => entry.country)).toEqual(["B", "C", "A"]);
+describe("sortByMetric", () => {
+  it("orders by the selected metric, not always by cases", () => {
+    expect(sortByMetric(COUNTRIES, "cases").map((c) => c.code)).toEqual([
+      "BB",
+      "CC",
+      "AA",
+    ]);
+    expect(sortByMetric(COUNTRIES, "newCases").map((c) => c.code)).toEqual([
+      "AA",
+      "CC",
+      "BB",
+    ]);
   });
 
   it("does not mutate its input", () => {
     const input = [{ cases: 1 }, { cases: 9 }];
-    sortData(input);
+    sortByMetric(input, "cases");
     expect(input[0].cases).toBe(1);
+  });
+
+  it("treats a missing figure as zero rather than sorting it randomly", () => {
+    const sorted = sortByMetric([{ code: "X" }, { code: "Y", cases: 5 }], "cases");
+    expect(sorted[0].code).toBe("Y");
   });
 });
 
 describe("prettyPrintStat", () => {
-  it("abbreviates and signs real values", () => {
-    expect(prettyPrintStat(1200000)).toBe("+1.2m");
+  it("abbreviates large values", () => {
+    expect(prettyPrintStat(1200000)).toBe("1.2m");
+    expect(prettyPrintStat(45056221)).toBe("45.1m");
   });
 
-  it("renders +0 for missing values", () => {
-    expect(prettyPrintStat(0)).toBe("+0");
-    expect(prettyPrintStat(null)).toBe("+0");
-    expect(prettyPrintStat(undefined)).toBe("+0");
+  it("renders 0 for missing values", () => {
+    expect(prettyPrintStat(0)).toBe("0");
+    expect(prettyPrintStat(null)).toBe("0");
+    expect(prettyPrintStat(undefined)).toBe("0");
   });
 });
 
 describe("formatNumber", () => {
   it("groups thousands without zero padding", () => {
     expect(formatNumber(412)).toBe("412");
-    expect(formatNumber(1234567)).toBe("1,234,567");
+    expect(formatNumber(777627275)).toBe("777,627,275");
   });
 
   it("treats missing values as zero", () => {
@@ -55,34 +71,42 @@ describe("formatNumber", () => {
 });
 
 describe("buildChartData", () => {
-  const history = {
-    cases: { "1/1/24": 10, "1/2/24": 15, "1/3/24": 40 },
-    deaths: { "1/1/24": 1, "1/2/24": 3, "1/3/24": 4 },
-  };
+  const weeks = [
+    ["2026-07-19", 500, 12],
+    ["2026-07-26", 700, 9],
+    ["2026-08-02", 300, 4],
+  ];
 
-  it("converts a cumulative series into day-over-day deltas", () => {
-    expect(buildChartData(history, "cases")).toEqual([
-      { x: "1/2/24", y: 5 },
-      { x: "1/3/24", y: 25 },
+  it("reads the case column for case metrics", () => {
+    expect(buildChartData(weeks, "cases")).toEqual([
+      { x: "2026-07-19", y: 500 },
+      { x: "2026-07-26", y: 700 },
+      { x: "2026-08-02", y: 300 },
     ]);
+    expect(buildChartData(weeks, "newCases")).toEqual(
+      buildChartData(weeks, "cases")
+    );
   });
 
-  it("reads the selected series, not just cases", () => {
-    expect(buildChartData(history, "deaths")).toEqual([
-      { x: "1/2/24", y: 2 },
-      { x: "1/3/24", y: 1 },
-    ]);
+  it("reads the death column for the deaths metric", () => {
+    expect(buildChartData(weeks, "deaths").map((p) => p.y)).toEqual([12, 9, 4]);
   });
 
-  it("returns an empty series when the type is absent", () => {
-    expect(buildChartData(history, "recovered")).toEqual([]);
+  it("returns an empty series when there is no data yet", () => {
     expect(buildChartData(undefined, "cases")).toEqual([]);
+    expect(buildChartData(null, "cases")).toEqual([]);
+  });
+
+  it("does not difference the series: WHO already reports per-week counts", () => {
+    // The previous source gave cumulative totals that had to be differenced,
+    // which is where the NaN points came from. These values pass through.
+    expect(buildChartData(weeks, "cases").map((p) => p.y)).toEqual([500, 700, 300]);
   });
 });
 
 describe("circleRadius", () => {
-  it("scales with the selected cases type", () => {
-    const country = { cases: 1000, deaths: 10 };
+  it("scales with the selected metric", () => {
+    const country = { cases: 1000, deaths: 10, newCases: 5 };
     expect(circleRadius(country, "cases")).toBeGreaterThan(
       circleRadius(country, "deaths")
     );
@@ -97,10 +121,16 @@ describe("circleRadius", () => {
 describe("withAlpha", () => {
   it("converts a palette hex into a translucent rgba string", () => {
     expect(withAlpha("#cc1034", 0.5)).toBe("rgba(204, 16, 52, 0.5)");
-    expect(withAlpha("#7dd71d", 0.4)).toBe("rgba(125, 215, 29, 0.4)");
+  });
+});
+
+describe("METRICS", () => {
+  it("gives every metric a distinct colour", () => {
+    const hexes = Object.values(METRICS).map((m) => m.hex);
+    expect(new Set(hexes).size).toBe(hexes.length);
   });
 
-  it("handles greyscale values without producing NaN channels", () => {
-    expect(withAlpha("#c0c0c0", 0.5)).toBe("rgba(192, 192, 192, 0.5)");
+  it("has no recovered metric, because WHO publishes no recovery figures", () => {
+    expect(METRICS.recovered).toBeUndefined();
   });
 });

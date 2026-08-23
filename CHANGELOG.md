@@ -4,6 +4,52 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-08-24
+
+### Changed
+
+- **Replaced disease.sh with World Health Organization figures.** disease.sh
+  appeared live — its `updated` timestamp always tracked the current day — but
+  its upstreams had stopped publishing: JHU CSSE archived on 10 March 2023 and
+  Worldometers went quiet. Its cumulative totals were frozen at 2023-03-09, it
+  under-reported the WHO case count by roughly 74 million, and its own `/all`
+  and `/historical` endpoints disagreed with each other by about 28 million.
+
+  No public API is currently both accurate and usable from a browser: WHO
+  serves current data with no CORS headers (preflight returns 403) and only as
+  a 26MB CSV, and Our World in Data is CORS-enabled but ships a 17MB file with
+  no server-side filtering, and went read-only in March 2026. The aggregation
+  therefore runs at build time, where neither constraint applies, and emits a
+  40KB snapshot (8KB gzipped) that the app loads in one same-origin request.
+
+- The app now issues **one request for the whole dataset** instead of one per
+  country and another per metric. Selecting a country is a local lookup.
+- The trend chart covers 120 weeks of newly reported cases or deaths. WHO
+  reports per-week counts directly, so the series no longer has to be
+  differenced from cumulative totals.
+- The country table and map now sort and scale by whichever metric is selected.
+
+### Added
+
+- `scripts/build-data.mjs` and `npm run build:data`, which fetch WHO's weekly
+  file, join it with country geometry, and emit the snapshot.
+- A scheduled workflow that regenerates the snapshot weekly and commits it only
+  when the figures change, after verifying the app still lints, tests and builds.
+- A provenance line in the UI naming the source and the date the data covers.
+
+### Removed
+
+- **The Recovered metric.** WHO publishes no recovery figures, so it had no
+  source. It is replaced by newly reported cases — the only genuinely current
+  signal in the data. The previous source reported `recovered: 0` for most
+  countries anyway.
+
+### Known limitations
+
+- WHO reports weekly, and only around 80 countries still report new cases.
+  Cumulative totals cover 225 countries; recent activity is far sparser. This
+  reflects the state of global COVID reporting rather than a defect.
+
 ## [1.0.0] - 2026-08-22
 
 Full modernisation of the original Create React App build, plus fixes for every
@@ -92,4 +138,5 @@ defect found in the audit of the initial commit.
 - `npm audit --omit=dev` reports **0 vulnerabilities**, down from the many
   advisories carried by the `react-scripts` 4 dependency tree.
 
+[1.1.0]: https://github.com/imnishant2512/Covid19-tracker/releases/tag/v1.1.0
 [1.0.0]: https://github.com/imnishant2512/Covid19-tracker/releases/tag/v1.0.0
