@@ -1,28 +1,13 @@
 import { Card, CardActionArea, CardContent, Typography } from "@mui/material";
+import { METRICS } from "../util";
 import "./InfoBox.css";
 
 /** Join class names, dropping falsy entries (`false`/`undefined` never reach the DOM). */
 const cx = (...names) => names.filter(Boolean).join(" ");
 
-function InfoBox({
-  title,
-  isRed,
-  isGrey,
-  active,
-  cases,
-  total,
-  isLoading,
-  onSelect,
-}) {
+function InfoBox({ title, metric, active, value, context, isLoading, onSelect }) {
   return (
-    <Card
-      className={cx(
-        "infoBox",
-        active && "infoBox--selected",
-        isRed && "infoBox--red",
-        isGrey && "infoBox--grey"
-      )}
-    >
+    <Card className={cx("infoBox", active && "infoBox--selected")}>
       <CardActionArea
         onClick={onSelect}
         aria-pressed={active}
@@ -33,25 +18,19 @@ function InfoBox({
             {title}
           </Typography>
 
-          {/* Deliberately not a heading: this is a bare figure ("+1.2k"), and
+          {/* Deliberately not a heading: this is a bare figure ("1.2m"), and
               exposing it to heading navigation announced a number with no
               context. The card's label lives on the button above. */}
-          <p
-            className={cx(
-              "infoBox__cases",
-              !isRed && "infoBox__cases--green",
-              isGrey && "infoBox__cases--grey"
-            )}
-          >
+          <p className="infoBox__value" style={{ color: METRICS[metric].hex }}>
             {isLoading ? (
               <span className="infoBox__spinner" role="status" aria-label="Loading" />
             ) : (
-              cases
+              value
             )}
           </p>
 
-          <Typography className="infoBox__total" color="textSecondary">
-            {total} Total
+          <Typography className="infoBox__context" color="textSecondary">
+            {context}
           </Typography>
         </CardContent>
       </CardActionArea>

@@ -1,19 +1,21 @@
-import { formatNumber } from "../util";
+import { METRICS, formatNumber } from "../util";
 import "./Table.css";
 
-function Table({ countries }) {
+function Table({ countries, metric }) {
+  const { field, label } = METRICS[metric];
+
   return (
     <div className="table">
       <table>
         <caption className="table__caption">
-          Countries ordered by total confirmed cases
+          Countries ordered by {label.toLowerCase()}
         </caption>
         <tbody>
-          {countries.map(({ country, cases, countryInfo }) => (
-            <tr key={countryInfo?._id ?? country}>
-              <td>{country}</td>
+          {countries.map((country) => (
+            <tr key={country.code}>
+              <td>{country.name}</td>
               <td>
-                <strong>{formatNumber(cases)}</strong>
+                <strong>{formatNumber(country[field])}</strong>
               </td>
             </tr>
           ))}

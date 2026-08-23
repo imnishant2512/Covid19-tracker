@@ -1,36 +1,24 @@
-const BASE_URL = "https://disease.sh/v3/covid-19";
-
 /**
- * Fetch JSON from the disease.sh API.
+ * The app reads a snapshot generated at build time by scripts/build-data.mjs
+ * rather than calling a COVID API at runtime.
  *
- * Throws on non-2xx responses so callers get a real error instead of the API's
- * `{ message: "..." }` body silently flowing through as if it were data — the
- * failure mode that used to leave the UI stuck on a spinner.
- *
- * @param {string} path   path below /v3/covid-19, e.g. "/countries/IN"
- * @param {AbortSignal} [signal]
+ * No public API is currently both accurate and reachable from a browser: the
+ * CORS-friendly ones (disease.sh) froze when their upstreams stopped publishing
+ * in 2023, and the current ones (WHO, Our World in Data) are either CORS-blocked
+ * or only available as multi-megabyte bulk files. Aggregating at build time
+ * gives correct WHO figures in a 40KB same-origin file.
  */
-export const getJSON = async (path, signal) => {
-  const response = await fetch(`${BASE_URL}${path}`, { signal });
+const SNAPSHOT_URL = `${import.meta.env.BASE_URL}data/covid-snapshot.json`;
+
+export const fetchSnapshot = async (signal) => {
+  const response = await fetch(SNAPSHOT_URL, { signal });
 
   if (!response.ok) {
-    throw new Error(
-      `disease.sh responded ${response.status} for ${path}`
-    );
+    throw new Error(`Could not load the data snapshot (${response.status})`);
   }
 
   return response.json();
 };
-
-export const fetchWorldwide = (signal) => getJSON("/all", signal);
-
-export const fetchCountries = (signal) => getJSON("/countries", signal);
-
-export const fetchCountry = (countryCode, signal) =>
-  getJSON(`/countries/${encodeURIComponent(countryCode)}`, signal);
-
-export const fetchHistorical = (lastDays, signal) =>
-  getJSON(`/historical/all?lastdays=${lastDays}`, signal);
 
 /** An abort is a cancellation, not a failure — never surface it to the user. */
 export const isAbort = (error) => error?.name === "AbortError";

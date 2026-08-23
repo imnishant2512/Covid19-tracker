@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { MapContainer, TileLayer, Circle, Popup, useMap } from "react-leaflet";
-import { casesTypeColors, circleRadius, formatNumber } from "../util";
+import { METRICS, circleRadius, formatNumber } from "../util";
 import "leaflet/dist/leaflet.css";
 import "./Map.css";
 
@@ -18,29 +18,29 @@ function Recenter({ center, zoom }) {
   return null;
 }
 
-function CountryCircles({ countries, casesType }) {
-  const { hex } = casesTypeColors[casesType];
+function CountryCircles({ countries, metric }) {
+  const { hex } = METRICS[metric];
 
   return countries.map((country) => (
     <Circle
-      key={country.countryInfo?._id ?? country.country}
-      center={[country.countryInfo.lat, country.countryInfo.long]}
+      key={country.code}
+      center={[country.lat, country.long]}
       fillOpacity={0.4}
       pathOptions={{ color: hex, fillColor: hex }}
-      radius={circleRadius(country, casesType)}
+      radius={circleRadius(country, metric)}
     >
       <Popup>
         <div className="info-container">
           <div
             className="info-flag"
-            style={{ backgroundImage: `url(${country.countryInfo.flag})` }}
+            style={{ backgroundImage: `url(${country.flag})` }}
           />
-          <div className="info-name">{country.country}</div>
+          <div className="info-name">{country.name}</div>
           <div className="info-confirmed">
             Cases: {formatNumber(country.cases)}
           </div>
-          <div className="info-recovered">
-            Recovered: {formatNumber(country.recovered)}
+          <div className="info-new">
+            New cases: {formatNumber(country.newCases)}
           </div>
           <div className="info-deaths">
             Deaths: {formatNumber(country.deaths)}
@@ -51,7 +51,7 @@ function CountryCircles({ countries, casesType }) {
   ));
 }
 
-function Map({ countries, casesType, center, zoom }) {
+function Map({ countries, metric, center, zoom }) {
   return (
     <div className="map">
       <MapContainer center={center} zoom={zoom} scrollWheelZoom={false}>
@@ -60,7 +60,7 @@ function Map({ countries, casesType, center, zoom }) {
           attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
         />
         <Recenter center={center} zoom={zoom} />
-        <CountryCircles countries={countries} casesType={casesType} />
+        <CountryCircles countries={countries} metric={metric} />
       </MapContainer>
     </div>
   );
