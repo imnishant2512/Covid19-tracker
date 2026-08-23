@@ -30,15 +30,29 @@ The app runs at http://localhost:5173.
 | `npm run dev` | Start the dev server with hot module replacement |
 | `npm run build` | Production build into `build/` |
 | `npm run preview` | Serve the production build locally |
-| `npm test` | Run the Vitest suite once |
-| `npm run test:watch` | Run tests in watch mode |
+| `npm test` | Run the Vitest unit suite once |
+| `npm run test:watch` | Run unit tests in watch mode |
+| `npm run test:coverage` | Unit tests with coverage, enforcing the 85% thresholds |
+| `npm run test:e2e` | Playwright end-to-end tests against the production build |
+| `npm run test:all` | Coverage run followed by the end-to-end suite |
 | `npm run lint` | Lint with ESLint |
+
+The end-to-end suite builds the app and serves it before running, and needs the
+browser binaries once:
+
+```bash
+npx playwright install chromium
+```
 
 ## Project layout
 
 ```
 index.html            Vite entry point
 vite.config.js        Build + Vitest config
+playwright.config.js  End-to-end config; builds and serves before testing
+e2e/
+  tracker.spec.js     Browser tests against the production build
+  fixtures.js         Stubbed disease.sh responses, so runs are deterministic
 src/
   main.jsx            React root (createRoot)
   App.jsx             All application state and layout
@@ -52,6 +66,22 @@ src/
     ErrorBoundary.jsx Keeps a panel crash from blanking the page
   __tests__/          Vitest + Testing Library specs
 ```
+
+## Testing
+
+Two layers:
+
+- **Unit and component** (Vitest + Testing Library) covers the helpers, the API
+  client and every component, with a regression test for each bug listed in the
+  changelog. CI enforces 85% coverage; the suite currently sits at 99.6%
+  statements.
+- **End-to-end** (Playwright) drives the real production bundle in Chromium,
+  because jsdom cannot prove that Leaflet paints, that Chart.js reaches a
+  canvas, or that the lazy chunks load. API calls and map tiles are stubbed from
+  `e2e/fixtures.js` so runs never depend on a third-party service.
+
+Specs that touch no DOM declare `@vitest-environment node`; jsdom costs roughly
+five seconds per file to construct, so this keeps the suite near 20 seconds.
 
 ## Deployment
 

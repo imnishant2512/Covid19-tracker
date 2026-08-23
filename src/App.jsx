@@ -10,11 +10,6 @@ import {
 import InfoBox from "./components/InfoBox";
 import Table from "./components/Table";
 import ErrorBoundary from "./components/ErrorBoundary";
-
-// Leaflet and Chart.js together are ~60% of the bundle and neither is needed
-// for first paint, so they load after the stats are on screen.
-const Map = lazy(() => import("./components/Map"));
-const LineGraph = lazy(() => import("./components/LineGraph"));
 import { fetchCountries, fetchCountry, fetchWorldwide, isAbort } from "./api";
 import {
   COUNTRY_ZOOM,
@@ -24,6 +19,11 @@ import {
   sortData,
 } from "./util";
 import "./App.css";
+
+// Leaflet and Chart.js together are ~60% of the bundle and neither is needed
+// for first paint, so they load after the stats are on screen.
+const Map = lazy(() => import("./components/Map"));
+const LineGraph = lazy(() => import("./components/LineGraph"));
 
 const ERROR_MESSAGES = {
   countries: "Couldn’t load the country list",
@@ -65,9 +65,9 @@ function App() {
       .then((data) => {
         setCountries(
           data.map((entry) => ({
-            id: entry.countryInfo._id ?? entry.country,
+            id: entry.countryInfo?._id ?? entry.country,
             name: entry.country,
-            value: entry.countryInfo.iso2,
+            value: entry.countryInfo?.iso2,
           }))
         );
         setTableData(sortData(data));

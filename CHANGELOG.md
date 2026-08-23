@@ -44,6 +44,12 @@ defect found in the audit of the initial commit.
   `unit: "month"`; Chart.js now selects the unit to suit the range.
 - **The chart stayed red for every metric** while the map circles changed
   colour. Both now derive from the same palette entry.
+- A country entry returned without a `countryInfo` object threw while the
+  dropdown was being built, taking the country list, table and map down with
+  it. The adjacent map filter already guarded this; the list did not.
+- The stat figure was marked up as an `<h2>`, so screen-reader heading
+  navigation announced a bare number ("+1.2k") with no context, from inside a
+  button. It is no longer a heading; the card's label is on the button.
 - Errors from concurrent requests overwrote one another (see above).
 
 ### Changed
@@ -60,6 +66,8 @@ defect found in the audit of the initial commit.
 - The Font Awesome CDN stylesheet was replaced by a CSS-only spinner that
   respects `prefers-reduced-motion`.
 - Data access moved into `src/api.js`; components moved to `src/components/`.
+- `eslint-plugin-react-refresh` was registered but enabled no rules; its
+  `only-export-components` rule is now on.
 - Unit suite runtime cut from ~55s to ~20s by prebundling MUI and Leaflet for
   the test runner, skipping stylesheet processing, and running DOM-free specs in
   the `node` environment instead of paying jsdom's ~5s startup per file. Test

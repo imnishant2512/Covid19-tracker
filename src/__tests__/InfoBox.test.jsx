@@ -36,6 +36,17 @@ describe("InfoBox", () => {
     expect(onSelect).toHaveBeenCalled();
   });
 
+  it("does not expose the bare figure to heading navigation", () => {
+    renderBox();
+
+    // The number carries no context on its own; announcing "heading level 2:
+    // +400" to a screen reader is noise. The label is on the button instead.
+    expect(screen.queryByRole("heading")).not.toBeInTheDocument();
+    expect(screen.getByRole("button")).toHaveAccessibleName(
+      /show coronavirus cases/i
+    );
+  });
+
   it("shows a spinner instead of the delta while loading", () => {
     renderBox({ isLoading: true });
 

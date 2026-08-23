@@ -201,6 +201,24 @@ describe("App", () => {
     expect(screen.getByTestId("map")).toBeInTheDocument();
   });
 
+  it("survives a country entry with no countryInfo at all", async () => {
+    vi.stubGlobal(
+      "fetch",
+      routeFetch({
+        "https://disease.sh/v3/covid-19/countries": () =>
+          Promise.resolve(ok([...COUNTRIES, { country: "Limbo", cases: 3 }])),
+      })
+    );
+
+    render(<App />);
+
+    // Regression: reading entry.countryInfo._id unguarded threw here and took
+    // the whole country list, table and map down with it.
+    expect(await screen.findByText("Limbo")).toBeInTheDocument();
+    expect(await screen.findByText("Brazil")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   it("aborts the in-flight stats request when the country changes", async () => {
     const user = userEvent.setup();
     render(<App />);
