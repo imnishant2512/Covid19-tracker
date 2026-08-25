@@ -14,7 +14,7 @@ Deployed live at https://covid19-tracker-c92c2.web.app/
 
 ## Getting started
 
-Requires Node 20.19+ or 22.12+ (Vite 7).
+Requires Node 22.12+ (Node 20 reached end of life in April 2026).
 
 ```bash
 npm install
@@ -51,8 +51,9 @@ npx playwright install chromium
 ```
 index.html            Vite entry point
 vite.config.js        Build + Vitest config
+jsconfig.json         JSDoc type checking (tsc --noEmit)
 .github/workflows/
-  ci.yml              Lint, typecheck, test and build on Node 20 and 22
+  ci.yml              Lint, typecheck, test and build on Node 22 and 24
   refresh-data.yml    Weekly WHO refresh; commits only when figures change
   release.yml         Publishes a GitHub release from CHANGELOG.md on a v* tag
 docs/
@@ -95,7 +96,7 @@ Two layers:
 
 - **Unit and component** (Vitest + Testing Library) covers the helpers, the API
   client and every component, with a regression test for each bug listed in the
-  changelog. CI enforces 85% coverage; the suite currently sits at 99.6%
+  changelog. CI enforces 85% coverage; the suite currently sits at 99.4%
   statements.
 - **End-to-end** (Playwright) drives the real production bundle in Chromium,
   because jsdom cannot prove that Leaflet paints, that Chart.js reaches a

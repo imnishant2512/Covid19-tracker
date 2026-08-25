@@ -4,6 +4,74 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-08-25
+
+A quality pass over structure, styling, types and documentation, plus the
+release and branch tidying that followed.
+
+### Fixed
+
+- **The "New Cases" figure failed WCAG AA.** The amber used for it sat at
+  2.01:1 against the card, below even the 3.0 threshold that large text is
+  allowed. It is now `#a16207` at 4.92:1, chosen to stay distinguishable from
+  the other two metrics on the map. A test now computes the contrast of every
+  metric colour and fails below 4.5:1.
+- **A country returned without a `countryInfo` object threw** while the dropdown
+  was built, taking the list, table and map down with it. The map filter beside
+  it already guarded this case.
+- **The stat figure was marked up as an `<h2>`**, so screen-reader heading
+  navigation announced a bare number with no context, from inside a button.
+- **Long country names were clipped.** "United Kingdom of Great Britain and
+  Northern Ireland" pushed the figure out of its row.
+- Three defects found by turning on type checking: the changelog script still
+  carried a fragile entry-point guard because an earlier edit had silently
+  failed; an `exact: true` option was passed to Testing Library's `findByRole`,
+  which is not part of its API and was being ignored; and `@types/leaflet` was
+  missing, so react-leaflet prop types were degrading to empty and validating
+  nothing.
+
+### Changed
+
+- **Design tokens.** Colours, spacing and radii moved into
+  `src/styles/tokens.css`; no component stylesheet contains a hex literal any
+  more. A test parses the stylesheet to prove the JavaScript palette, needed by
+  Leaflet and Chart.js, never drifts from it.
+- **Dark mode** follows `prefers-color-scheme`. The metric colours are declared
+  twice deliberately: no single colour can meet 4.5:1 against both white and a
+  dark surface, because the luminance ranges required do not overlap.
+- `util.js` was a grab-bag of metric config, formatting, geometry and chart
+  transformation; it split into `lib/metrics.js`, `lib/format.js` and
+  `lib/chart.js`. Fetching moved out of `App` into a `useSnapshot` hook.
+- Component styles moved out of `App.css` and beside their components; `body` is
+  styled in one file rather than two; a dead Create React App `code` rule is
+  gone; `* { margin: 0 }` became a targeted reset; there is a real
+  `:focus-visible` ring; and the single 990px breakpoint became three, so tablet
+  widths no longer get the cramped desktop grid.
+- **CI now runs on Node 22 and 24.** It previously ran on Node 20, which reached
+  end of life on 2026-04-30 and no longer receives security patches. Node 24 is
+  what the project is developed on and nothing had been testing it.
+- The page description advertised recoveries, which no longer exist, and a
+  "120-day" chart that is now 120 weeks.
+
+### Added
+
+- **JSDoc type checking** via `jsconfig.json` and `npm run typecheck`, wired into
+  CI. No conversion to TypeScript.
+- **Release automation**: `scripts/changelog-section.mjs` extracts a version's
+  notes and `.github/workflows/release.yml` publishes them, so release notes are
+  read from this file rather than retyped.
+- `.gitattributes` normalising line endings, which otherwise depended on each
+  contributor's `core.autocrlf` and could break the shell blocks in workflows on
+  Linux runners.
+- Documentation for the three workflows, and `docs/data-source.md` recording why
+  the data is built rather than fetched.
+
+### Notes
+
+- The default branch was renamed from `master` to `main`.
+- The weekly data refresh ran unattended for the first time on 2026-08-24 and
+  committed the WHO snapshot on its own.
+
 ## [1.1.0] - 2026-08-24
 
 ### Changed
@@ -138,5 +206,6 @@ defect found in the audit of the initial commit.
 - `npm audit --omit=dev` reports **0 vulnerabilities**, down from the many
   advisories carried by the `react-scripts` 4 dependency tree.
 
+[1.2.0]: https://github.com/imnishant2512/Covid19-tracker/releases/tag/v1.2.0
 [1.1.0]: https://github.com/imnishant2512/Covid19-tracker/releases/tag/v1.1.0
 [1.0.0]: https://github.com/imnishant2512/Covid19-tracker/releases/tag/v1.0.0
