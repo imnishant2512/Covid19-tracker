@@ -148,6 +148,16 @@ test("credits the source and the period the figures cover", async ({ page }) => 
   await expect(note).toContainText("2026-08-02");
 });
 
+test("exposes landmarks and a single top-level heading", async ({ page }) => {
+  await expect(page.getByText("777.6m")).toBeVisible();
+
+  // Regression: there was no main landmark at all, so landmark navigation and
+  // skip-to-content had nothing to target.
+  await expect(page.getByRole("main")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+  await expect(page.getByRole("banner")).toHaveCount(0); // header is inside main
+});
+
 test("stat cards are reachable and operable by keyboard", async ({ page }) => {
   await expect(page.getByText("777.6m")).toBeVisible();
 

@@ -63,7 +63,10 @@ function App() {
   }, [country, countries]);
 
   return (
-    <div className="app">
+    // A main landmark, so assistive technology has a target to jump to. The
+    // grid container doubles as it: the page has no nav or sidebar, so
+    // everything inside is primary content.
+    <main className="app">
       <div className="app__left">
         <header className="app__header">
           <h1 className="app__title">Covid-19 tracker</h1>
@@ -152,7 +155,7 @@ function App() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </main>
   );
 }
 
