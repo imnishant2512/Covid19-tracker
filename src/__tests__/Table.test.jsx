@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import Table from "../components/Table";
 import { SNAPSHOT } from "./fixtures";
 
-const renderTable = (metric = "cases") =>
+const renderTable = (/** @type {import("../lib/metrics").MetricKey} */ metric = "cases") =>
   render(<Table countries={SNAPSHOT.countries} metric={metric} />);
 
 describe("Table", () => {

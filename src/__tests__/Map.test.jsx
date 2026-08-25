@@ -5,7 +5,7 @@ import Map from "../components/Map";
 import { METRICS } from "../lib/metrics";
 import { SNAPSHOT } from "./fixtures";
 
-const renderMap = (metric = "cases", props = {}) =>
+const renderMap = (/** @type {import("../lib/metrics").MetricKey} */ metric = "cases", props = {}) =>
   render(
     <Map
       countries={SNAPSHOT.countries}

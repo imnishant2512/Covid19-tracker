@@ -8,11 +8,11 @@ import { fetchSnapshot, isAbort } from "../api";
  * and so the loading and abort behaviour can be tested without rendering the
  * whole dashboard.
  *
- * @returns {{snapshot: object|null, error: Error|null, isLoading: boolean}}
+ * @returns {{snapshot: import("../lib/metrics").Snapshot|null, error: Error|null, isLoading: boolean}}
  */
 export const useSnapshot = () => {
-  const [snapshot, setSnapshot] = useState(null);
-  const [error, setError] = useState(null);
+  const [snapshot, setSnapshot] = useState(/** @type {import("../lib/metrics").Snapshot|null} */ (null));
+  const [error, setError] = useState(/** @type {Error|null} */ (null));
 
   useEffect(() => {
     const controller = new AbortController();

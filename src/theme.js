@@ -22,7 +22,12 @@ export const paletteDark = {
   deaths: "#aeb6bf",
 };
 
-/** "#cc1034" -> "rgba(204, 16, 52, 0.5)", for chart fills derived from the palette. */
+/**
+ * "#cc1034" -> "rgba(204, 16, 52, 0.5)", for chart fills derived from the palette.
+ *
+ * @param {string} hex
+ * @param {number} alpha
+ */
 export const withAlpha = (hex, alpha) => {
   const value = hex.replace("#", "");
   const [r, g, b] = [0, 2, 4].map((i) => parseInt(value.slice(i, i + 2), 16));

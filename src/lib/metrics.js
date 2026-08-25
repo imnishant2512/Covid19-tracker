@@ -50,15 +50,40 @@ export const METRICS = {
   },
 };
 
-export const METRIC_KEYS = Object.keys(METRICS);
+/** @typedef {keyof typeof METRICS} MetricKey */
+/**
+ * A country row from the snapshot.
+ * @typedef {{code: string, name: string, lat: number, long: number, flag: string,
+ *   cases: number, deaths: number, newCases: number, newDeaths: number}} Country
+ */
+/**
+ * The generated data snapshot the app loads at runtime.
+ * @typedef {{updated: string, source: string, sourceUrl: string, generatedAt: string,
+ *   global: {cases: number, deaths: number, newCases: number, newDeaths: number},
+ *   countries: Country[], weeks: Array<[string, number, number]>}} Snapshot
+ */
 
-/** Sort a copy of the country list by a metric, descending. */
+export const METRIC_KEYS = /** @type {MetricKey[]} */ (Object.keys(METRICS));
+
+/**
+ * Sort a copy of the country list by a metric, descending.
+ *
+ * @template {Record<string, any>} T
+ * @param {T[]} data
+ * @param {MetricKey} metric
+ * @returns {T[]}
+ */
 export const sortByMetric = (data, metric) =>
   [...data].sort(
     (a, b) => (b[METRICS[metric].field] ?? 0) - (a[METRICS[metric].field] ?? 0)
   );
 
-/** Circle radius in metres, scaled so small and large countries stay legible. */
+/**
+ * Circle radius in metres, scaled so small and large countries stay legible.
+ *
+ * @param {Record<string, any>} country
+ * @param {MetricKey} metric
+ */
 export const circleRadius = (country, metric) => {
   const { field, multiplier } = METRICS[metric];
   return Math.sqrt(Math.max(country[field] ?? 0, 0) / 10) * multiplier;

@@ -30,7 +30,9 @@ const LineGraph = lazy(() => import("./components/LineGraph"));
 function App() {
   const { snapshot, error, isLoading } = useSnapshot();
   const [country, setCountry] = useState(WORLDWIDE);
-  const [metric, setMetric] = useState("cases");
+  const [metric, setMetric] = useState(
+    /** @type {import("./lib/metrics").MetricKey} */ ("cases")
+  );
 
   // Memoised: `?? []` would otherwise hand a fresh array to every dependent
   // memo on each render.

@@ -27,7 +27,7 @@ vi.mock("react-chartjs-2", () => ({
 const points = () =>
   JSON.parse(screen.getByTestId("line").getAttribute("data-points"));
 
-const renderGraph = (metric = "cases", ...rest) =>
+const renderGraph = (/** @type {import("../lib/metrics").MetricKey} */ metric = "cases", ...rest) =>
   // Note: a default parameter would swallow an explicit `undefined`, so the
   // "no data yet" case is expressed by passing no second argument at all.
   render(

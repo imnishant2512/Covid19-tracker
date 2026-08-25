@@ -66,6 +66,7 @@ describe("formatNumber", () => {
 });
 
 describe("buildChartData", () => {
+  /** @type {Array<[string, number, number]>} */
   const weeks = [
     ["2026-07-19", 500, 12],
     ["2026-07-26", 700, 9],
