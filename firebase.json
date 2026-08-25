@@ -11,6 +11,56 @@
         "source": "**",
         "destination": "/index.html"
       }
+    ],
+    "headers": [
+      {
+        "comment": "Asset filenames carry a content hash, so a changed file is a changed URL. They can be cached indefinitely; Firebase's default of one hour re-fetches them for no reason.",
+        "source": "/assets/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "comment": "The entry point must never be cached, or a deploy is invisible until the previous copy expires.",
+        "source": "/index.html",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
+        "comment": "Regenerated weekly and unhashed, so revalidate rather than serve a stale snapshot.",
+        "source": "/data/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
+          },
+          {
+            "key": "Referrer-Policy",
+            "value": "strict-origin-when-cross-origin"
+          },
+          {
+            "comment": "The app frames nothing and should not be framed.",
+            "key": "X-Frame-Options",
+            "value": "DENY"
+          }
+        ]
+      }
     ]
   }
 }
