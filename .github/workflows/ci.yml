@@ -96,3 +96,14 @@ jobs:
 
       - name: Fail on high-severity advisories in runtime deps
         run: npm audit --omit=dev --audit-level=high
+
+  deploy:
+    name: Deploy
+    # Only once lint, types, tests, the browser suite and the audit have all
+    # passed, and only for main. A pull request must never publish.
+    needs: [verify, e2e, audit]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
+    with:
+      reason: "CI passed on main"

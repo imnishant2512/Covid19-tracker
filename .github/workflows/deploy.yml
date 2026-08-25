@@ -1,0 +1,80 @@
+name: Deploy
+
+# Reusable so both paths to a deploy can call it:
+#   - ci.yml, once lint, tests and the end-to-end suite have passed
+#   - refresh-data.yml, when the weekly WHO refresh actually changed the figures
+#
+# A plain `on: push` trigger would not work for the second case. The refresh
+# commits using GITHUB_TOKEN, and GitHub does not trigger workflows from pushes
+# made with it, so the data refresh — the one case this exists for — would never
+# deploy.
+on:
+  workflow_call:
+    inputs:
+      reason:
+        description: "What prompted the deploy, for the run summary."
+        required: false
+        type: string
+        default: "push to main"
+  workflow_dispatch:
+
+jobs:
+  hosting:
+    name: Build and deploy to Firebase Hosting
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Confirm the snapshot is in the build
+        run: |
+          test -f build/data/covid-snapshot.json
+          node -e "
+            const s = require('./build/data/covid-snapshot.json');
+            if (!s.updated || !s.countries?.length) {
+              throw new Error('Snapshot is present but empty or malformed');
+            }
+            console.log('Snapshot: through ' + s.updated + ', ' + s.countries.length + ' countries');
+          "
+
+      - name: Deploy
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT secret is not set."
+            exit 1
+          fi
+
+          # Written outside the workspace so it can never be picked up by a
+          # build step, and removed again whatever the outcome.
+          KEY="$RUNNER_TEMP/firebase-service-account.json"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$KEY"
+          trap 'rm -f "$KEY"' EXIT
+
+          GOOGLE_APPLICATION_CREDENTIALS="$KEY" \
+            npx --yes firebase-tools@latest deploy \
+              --only hosting \
+              --project covid19-tracker-c92c2 \
+              --non-interactive
+
+      - name: Summary
+        if: success()
+        run: |
+          {
+            echo "### Deployed"
+            echo
+            echo "- Reason: ${{ inputs.reason || 'manual run' }}"
+            echo "- Commit: \`${{ github.sha }}\`"
+            echo "- URL: https://covid19-tracker-c92c2.web.app"
+          } >> "$GITHUB_STEP_SUMMARY"
