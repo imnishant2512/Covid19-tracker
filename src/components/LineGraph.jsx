@@ -59,7 +59,7 @@ const options = {
  *
  * @param {object}   props
  * @param {Array<[string, number, number]>} [props.weeks] [date, newCases, newDeaths]
- * @param {string}   props.metric      Key into METRICS.
+ * @param {import("../lib/metrics").MetricKey} props.metric
  * @param {string}   [props.className]
  */
 function LineGraph({ weeks, metric, className }) {

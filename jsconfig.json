@@ -9,6 +9,11 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
+    // TypeScript 7 defaults strict on, where 5 did not. Enabling it here
+    // surfaces 51 findings, mostly implicit-any parameters in the specs. Worth
+    // doing as its own piece of work; not as a side effect of a dependency
+    // upgrade. Run `npx tsc -p jsconfig.json --noEmit --strict` to see them.
+    "strict": false,
     "allowJs": true,
     "checkJs": true,
     "noEmit": true,

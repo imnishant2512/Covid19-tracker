@@ -26,9 +26,8 @@ function Recenter({ center, zoom }) {
 
 /**
  * @param {object} props
- * @param {Array<{code: string, name: string, lat: number, long: number, flag: string,
- *   cases: number, deaths: number, newCases: number, newDeaths: number}>} props.countries
- * @param {string} props.metric
+ * @param {Array<import("../lib/metrics").Country>} props.countries
+ * @param {import("../lib/metrics").MetricKey} props.metric
  */
 function CountryCircles({ countries, metric }) {
   const { hex } = METRICS[metric];
@@ -65,8 +64,8 @@ function CountryCircles({ countries, metric }) {
 
 /**
  * @param {object} props
- * @param {Array<object>} props.countries
- * @param {string} props.metric
+ * @param {Array<import("../lib/metrics").Country>} props.countries
+ * @param {import("../lib/metrics").MetricKey} props.metric
  * @param {[number, number]} props.center
  * @param {number} props.zoom
  */

@@ -23,7 +23,7 @@ export const useColorScheme = () => {
     const media = window.matchMedia?.(QUERY);
     if (!media) return undefined;
 
-    const onChange = (event) => setScheme(event.matches ? "dark" : "light");
+    const onChange = (/** @type {MediaQueryListEvent} */ event) => setScheme(event.matches ? "dark" : "light");
     media.addEventListener("change", onChange);
     return () => media.removeEventListener("change", onChange);
   }, []);

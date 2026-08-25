@@ -2,6 +2,11 @@ import { METRICS } from "../lib/metrics";
 import { formatNumber } from "../lib/format";
 import "./Table.css";
 
+/**
+ * @param {object} props
+ * @param {Array<import("../lib/metrics").Country>} props.countries
+ * @param {import("../lib/metrics").MetricKey} props.metric
+ */
 function Table({ countries, metric }) {
   const { field, label } = METRICS[metric];
 

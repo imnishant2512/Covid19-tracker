@@ -4,6 +4,62 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-08-25
+
+Every dependency brought current: seven majors, taken one at a time with the
+suite green between each. `npm outdated` is now empty and the audit reports no
+vulnerabilities.
+
+### Changed
+
+- **ESLint 9 → 10**, with `eslint-plugin-react-hooks` 5 → 7. The new plugin
+  applies sixteen rules where the old one applied a handful; the code passes
+  unchanged.
+- **Vitest 3 → 4** and `@vitest/coverage-v8` 3 → 4.
+- **Vite 7 → 8**, which bundles with Rolldown. Build time fell from about
+  fifteen seconds to three.
+- **TypeScript 5 → 7**, **MUI 7 → 9**, jsdom 26 → 29, and the remaining minor
+  and type packages.
+
+### Fixed
+
+Three of the upgrades broke something quietly rather than loudly, which is the
+part worth recording:
+
+- **Vitest 4 renamed `deps.optimizer.web` to `deps.optimizer.client`.** The old
+  key is ignored without warning, so the prebundling this project relies on
+  silently stopped: test import time went from ~26s to ~80s and the heaviest DOM
+  spec began timing out.
+- Repairing that exposed a second problem. With prebundling working again, the
+  Map spec failed, because Leaflet gets a **distinct module instance** when
+  prebundled and spying on `L.Map.prototype` no longer intercepts the call
+  react-leaflet makes. That test had only ever passed because the optimizer
+  config was broken. Leaflet is now excluded from the prebundle list.
+- **Vite 8's Rolldown rejects the object form of `manualChunks`**, and Vite 8's
+  own `defineConfig` type no longer accepts Vitest's `test` key.
+
+### Added
+
+- **Six specs for `useColorScheme`**, which had none. `@vitest/coverage-v8` 4
+  counts statements more precisely, and the apparent drop from 99.4% to 94.0%
+  turned out to be a real gap rather than a regression: the media-query
+  listener, the scheme changing while the page is open, listener cleanup and the
+  missing-`matchMedia` fallback were all untested. Coverage is back to 97.8%.
+- **A `Snapshot` typedef**, plus `Country` and `MetricKey`. TypeScript 7 defaults
+  `strict` on, and while `strict` itself is pinned false for now, the useful
+  findings are fixed: the data snapshot was being passed around as `object`, so
+  none of App's property access was checked.
+
+### Known limitations
+
+- Suite runtime roughly doubled. Vitest 4 costs materially more per file to
+  construct a test environment on this hardware; capping workers made contention
+  worse and reverting jsdom changed nothing. `testTimeout` is raised to 15s after
+  that diagnosis rather than instead of it — the heaviest spec measures ~850ms in
+  isolation, so the headroom is for contention, not a slow test.
+- Enabling `strict` surfaces 51 further findings, mostly implicit-any parameters
+  in the specs. Worth doing as its own piece of work.
+
 ## [1.2.0] - 2026-08-25
 
 A quality pass over structure, styling, types and documentation, plus the
@@ -206,6 +262,7 @@ defect found in the audit of the initial commit.
 - `npm audit --omit=dev` reports **0 vulnerabilities**, down from the many
   advisories carried by the `react-scripts` 4 dependency tree.
 
+[1.3.0]: https://github.com/imnishant2512/Covid19-tracker/releases/tag/v1.3.0
 [1.2.0]: https://github.com/imnishant2512/Covid19-tracker/releases/tag/v1.2.0
 [1.1.0]: https://github.com/imnishant2512/Covid19-tracker/releases/tag/v1.1.0
 [1.0.0]: https://github.com/imnishant2512/Covid19-tracker/releases/tag/v1.0.0

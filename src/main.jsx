@@ -5,7 +5,10 @@ import App from "./App";
 import { muiTheme } from "./theme";
 import "./index.css";
 
-createRoot(document.getElementById("root")).render(
+const container = document.getElementById("root");
+if (!container) throw new Error("Root element #root is missing from index.html");
+
+createRoot(container).render(
   <StrictMode>
     <ThemeProvider theme={muiTheme}>
       {/* Applies MUI's colour-scheme-aware background and text colours. */}

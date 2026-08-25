@@ -7,6 +7,10 @@ import { METRICS } from "./metrics";
  * previous data source gave cumulative totals that had to be differenced, which
  * is where the old NaN points came from.
  */
+/**
+ * @param {Array<[string, number, number]>|undefined|null} weeks
+ * @param {import("./metrics").MetricKey} metric
+ */
 export const buildChartData = (weeks, metric) => {
   if (!Array.isArray(weeks)) return [];
   const { weekIndex } = METRICS[metric];
@@ -15,4 +19,5 @@ export const buildChartData = (weeks, metric) => {
 };
 
 /** The snapshot ships ISO dates; Chart.js's time scale wants timestamps. */
+/** @param {string} isoDate */
 export const toTimestamp = (isoDate) => new Date(`${isoDate}T00:00:00Z`).getTime();

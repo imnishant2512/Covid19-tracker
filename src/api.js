@@ -10,7 +10,7 @@ const SNAPSHOT_URL = `${import.meta.env.BASE_URL}data/covid-snapshot.json`;
 
 /**
  * @param {AbortSignal} [signal]
- * @returns {Promise<object>}
+ * @returns {Promise<import("./lib/metrics").Snapshot>}
  */
 export const fetchSnapshot = async (signal) => {
   const response = await fetch(SNAPSHOT_URL, { signal });
