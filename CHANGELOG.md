@@ -4,6 +4,60 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-08-31
+
+Closes the last gap in the automation, plus an accessibility fix and hosting
+corrections found by inspecting the deployed site rather than the repository.
+
+### Added
+
+- **Automated deploys.** The weekly WHO refresh committed to `main` but never
+  reached the live site, so the repository updated itself while the published
+  figures stayed frozen at whatever the last manual deploy contained. By the
+  time this landed the site was seven days of data behind.
+
+  A plain `on: push` trigger would not have fixed it: the refresh commits using
+  `GITHUB_TOKEN`, and GitHub does not start workflows from pushes made with it,
+  so the one case worth automating would never have fired. Deploy is therefore a
+  reusable workflow with two callers — `ci.yml` once lint, types, unit tests, the
+  browser suite and the audit have all passed on `main`, and `refresh-data.yml`
+  when the refresh actually changed the figures.
+
+  The deploy asserts the data snapshot is present and non-empty in the build
+  before publishing, so a broken data step fails rather than replacing the live
+  site with an app that has nothing to show. The service-account key is written
+  outside the workspace and removed on exit.
+
+### Fixed
+
+- **No `main` landmark.** The page had a header and a section but nothing marked
+  the primary content, so screen-reader landmark navigation and skip-to-content
+  had no target at all.
+- **Hosting cache headers were wrong in both directions.** Firebase served
+  `max-age=3600` for everything. Asset filenames carry a content hash, so a
+  changed file is a changed URL and they can be cached indefinitely; an hour
+  meant re-fetching unchanged bundles. `index.html` is the opposite: at an hour a
+  deploy stayed invisible until the previous copy expired. Assets are now
+  immutable for a year, the entry point and the data snapshot revalidate.
+- Added `X-Content-Type-Options`, `Referrer-Policy` and `X-Frame-Options`, none
+  of which Firebase sets by default.
+
+### Changed
+
+- **Vitest 4 → 5**, which is faster than 4 was: the coverage run drops from about
+  36s to 29s, recovering most of the regression 4 introduced.
+- Dependencies refreshed to current within their existing ranges, including MUI
+  9.4, ESLint 10.10 and Playwright 1.63. `npm audit` reports no vulnerabilities.
+
+### Notes
+
+- `pool: 'vmThreads'` was measured at roughly 30% faster again and deliberately
+  not adopted: it runs specs inside `node:vm`, and this suite has already hit one
+  module-identity problem with Leaflet under prebundling.
+- The 15s `testTimeout` was re-checked rather than assumed. At the 5s default the
+  suite still fails about one run in three under coverage, so the headroom
+  remains earned.
+
 ## [1.3.0] - 2026-08-25
 
 Every dependency brought current: seven majors, taken one at a time with the
@@ -262,6 +316,7 @@ defect found in the audit of the initial commit.
 - `npm audit --omit=dev` reports **0 vulnerabilities**, down from the many
   advisories carried by the `react-scripts` 4 dependency tree.
 
+[1.4.0]: https://github.com/imnishant2512/Covid19-tracker/releases/tag/v1.4.0
 [1.3.0]: https://github.com/imnishant2512/Covid19-tracker/releases/tag/v1.3.0
 [1.2.0]: https://github.com/imnishant2512/Covid19-tracker/releases/tag/v1.2.0
 [1.1.0]: https://github.com/imnishant2512/Covid19-tracker/releases/tag/v1.1.0
