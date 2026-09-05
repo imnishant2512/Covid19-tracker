@@ -28,12 +28,13 @@ export default defineConfig({
     setupFiles: "./src/setupTests.js",
     restoreMocks: true,
 
-    // Vitest 4 costs materially more per file to construct a test environment
-    // than 3 did on this hardware, and coverage instrumentation compounds it.
-    // The heaviest DOM spec measures ~850ms in isolation, so this is headroom
-    // for contention rather than for a slow test. Checked first: the dependency
-    // optimizer key (fixed below), capping workers (made it worse) and
-    // reverting jsdom (no effect).
+    // The heaviest DOM spec measures ~850ms in isolation; this is headroom for
+    // contention under coverage instrumentation, not for a slow test. Re-checked
+    // on Vitest 5: at the 5s default the suite still fails roughly one run in
+    // three, so the headroom is still earned. Checked and rejected as fixes:
+    // capping workers (slower), reverting jsdom (no effect), and pool:
+    // 'vmThreads' (~30% faster but it runs specs in node:vm, and this suite
+    // already hit one module-identity problem with Leaflet).
     testTimeout: 15000,
     hookTimeout: 15000,
 
