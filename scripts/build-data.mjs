@@ -9,8 +9,9 @@
  *
  * Usage: npm run build:data
  */
-import { writeFile, mkdir } from "node:fs/promises";
+import { writeFile, mkdir, readFile } from "node:fs/promises";
 import { gzipSync } from "node:zlib";
+import { pathToFileURL } from "node:url";
 
 const WHO_WEEKLY =
   "https://srhdpeuwpubsa.blob.core.windows.net/whdh/COVID/WHO-COVID-19-global-data.csv";
@@ -39,6 +40,25 @@ const splitRow = (line) => {
   }
   cells.push(cell);
   return cells;
+};
+
+/**
+ * Do two snapshots carry the same figures?
+ *
+ * `generatedAt` records when the fetch ran and moves on every run, so comparing
+ * whole files reported a change even when WHO had published nothing.
+ *
+ * @param {object} a
+ * @param {object} b
+ */
+export const sameFigures = (a, b) => {
+  const withoutStamp = (value) => {
+    const copy = { ...value };
+    delete copy.generatedAt;
+    return JSON.stringify(copy);
+  };
+
+  return withoutStamp(a) === withoutStamp(b);
 };
 
 const num = (value) => {
@@ -137,6 +157,28 @@ const build = async () => {
   };
 
   await mkdir(new URL(".", OUT), { recursive: true });
+
+  // `generatedAt` records when the fetch ran, so it differs on every run even
+  // when WHO has published nothing new. Writing it unconditionally defeated the
+  // "commit only when the figures change" guard downstream: the file always
+  // differed, so every scheduled run committed and — once deploys were
+  // automated — republished the site for no reason.
+  //
+  // Compare everything except that field, and leave the file untouched when the
+  // figures have not moved.
+  const previous = await readFile(OUT, "utf8").catch(() => null);
+  if (previous) {
+    try {
+      if (sameFigures(JSON.parse(previous), snapshot)) {
+        console.log(`\nWHO figures are unchanged through ${snapshot.updated}.`);
+        console.log("  Left public/data/covid-snapshot.json untouched.");
+        return;
+      }
+    } catch {
+      // An unreadable existing file is no reason to skip the write.
+    }
+  }
+
   const json = JSON.stringify(snapshot);
   await writeFile(OUT, `${json}\n`);
 
@@ -152,7 +194,11 @@ const build = async () => {
   );
 };
 
-build().catch((error) => {
-  console.error(`\nData build failed: ${error.message}`);
-  process.exit(1);
-});
+// Only run when invoked directly, so sameFigures can be imported by tests
+// without triggering a network fetch.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  build().catch((error) => {
+    console.error(`\nData build failed: ${error.message}`);
+    process.exit(1);
+  });
+}
