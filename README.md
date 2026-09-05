@@ -54,6 +54,7 @@ vite.config.js        Build + Vitest config
 jsconfig.json         JSDoc type checking (tsc --noEmit)
 .github/workflows/
   ci.yml              Lint, typecheck, test and build on Node 22 and 24
+  deploy.yml          Reusable Firebase deploy, called by ci and refresh-data
   refresh-data.yml    Weekly WHO refresh; commits only when figures change
   release.yml         Publishes a GitHub release from CHANGELOG.md on a v* tag
 docs/
@@ -108,11 +109,24 @@ five seconds per file to construct, so this keeps the suite near 20 seconds.
 
 ## Deployment
 
-The build output goes to `build/`, which is what `firebase.json` serves:
+Deploys are automatic. `deploy.yml` publishes to Firebase Hosting after CI
+passes on `main`, and again whenever the weekly data refresh changes the
+figures.
+
+That second path needs its own trigger rather than a plain `on: push`: the
+refresh commits using `GITHUB_TOKEN`, and GitHub does not start workflows from
+pushes made with it, so the case the automation exists for would never fire.
+`deploy.yml` is therefore a reusable workflow that both callers invoke.
+
+It requires a `FIREBASE_SERVICE_ACCOUNT` repository secret containing the JSON
+key for a service account with the Firebase Hosting Admin role. The key is
+written outside the workspace during the run and deleted afterwards.
+
+To publish by hand:
 
 ```bash
 npm run build
-firebase deploy
+firebase deploy --only hosting
 ```
 
 ## Where the data comes from
