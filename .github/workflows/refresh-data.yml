@@ -16,6 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       changed: ${{ steps.commit.outputs.changed }}
+      sha: ${{ steps.commit.outputs.sha }}
+      updated: ${{ steps.commit.outputs.updated }}
 
     steps:
       - uses: actions/checkout@v4
@@ -54,6 +56,10 @@ jobs:
           git commit -m "chore(data): refresh WHO snapshot through ${UPDATED}"
           git push
 
+          # The deploy must build this commit, not the one the run started from.
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "updated=${UPDATED}" >> "$GITHUB_OUTPUT"
+
   deploy:
     # This commit is made with GITHUB_TOKEN, which by design does not trigger
     # other workflows, so the deploy has to be called from here. The refresh job
@@ -66,3 +72,5 @@ jobs:
     secrets: inherit
     with:
       reason: "weekly WHO data refresh"
+      ref: ${{ needs.refresh.outputs.sha }}
+      expected-updated: ${{ needs.refresh.outputs.updated }}

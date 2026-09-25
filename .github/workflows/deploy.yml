@@ -16,6 +16,20 @@ on:
         required: false
         type: string
         default: "push to main"
+      ref:
+        description: >-
+          Commit to build. Defaults to the commit that started the calling run,
+          which is wrong for the data refresh: that run pushes a new commit
+          after it starts, so building the starting commit publishes the
+          previous week's figures.
+        required: false
+        type: string
+        default: ""
+      expected-updated:
+        description: "If set, the snapshot's `updated` date the build must contain."
+        required: false
+        type: string
+        default: ""
   workflow_dispatch:
 
 jobs:
@@ -25,6 +39,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
 
       - uses: actions/setup-node@v4
         with:
@@ -37,12 +53,20 @@ jobs:
         run: npm run build
 
       - name: Confirm the snapshot is in the build
+        env:
+          EXPECTED_UPDATED: ${{ inputs.expected-updated }}
         run: |
           test -f build/data/covid-snapshot.json
           node -e "
             const s = require('./build/data/covid-snapshot.json');
             if (!s.updated || !s.countries?.length) {
               throw new Error('Snapshot is present but empty or malformed');
+            }
+            // Guards against building the wrong commit, which previously
+            // published stale data while every step reported success.
+            const expected = process.env.EXPECTED_UPDATED;
+            if (expected && s.updated !== expected) {
+              throw new Error('Snapshot is through ' + s.updated + ' but ' + expected + ' was expected');
             }
             console.log('Snapshot: through ' + s.updated + ', ' + s.countries.length + ' countries');
           "
@@ -75,6 +99,6 @@ jobs:
             echo "### Deployed"
             echo
             echo "- Reason: ${{ inputs.reason || 'manual run' }}"
-            echo "- Commit: \`${{ github.sha }}\`"
+            echo "- Commit: \`${{ inputs.ref || github.sha }}\`"
             echo "- URL: https://covid19-tracker-c92c2.web.app"
           } >> "$GITHUB_STEP_SUMMARY"
