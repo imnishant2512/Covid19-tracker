@@ -120,6 +120,11 @@ refresh commits using `GITHUB_TOKEN`, and GitHub does not start workflows from
 pushes made with it, so the case the automation exists for would never fire.
 `deploy.yml` is therefore a reusable workflow that both callers invoke.
 
+The refresh passes the commit it pushed, not the one its run started from, and
+the deploy fails unless the built snapshot is through the expected date.
+Without that, every refresh published the previous week's figures while
+reporting success.
+
 It requires a `FIREBASE_SERVICE_ACCOUNT` repository secret containing the JSON
 key for a service account with the Firebase Hosting Admin role. The key is
 written outside the workspace during the run and deleted afterwards.
