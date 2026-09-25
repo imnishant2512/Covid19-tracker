@@ -24,8 +24,8 @@
         ]
       },
       {
-        "comment": "The entry point must never be cached, or a deploy is invisible until the previous copy expires.",
-        "source": "/index.html",
+        "comment": "The entry point must never be cached: each release deletes the previous hashed assets, so a stale copy points at files that 404. Header rules match the requested URL, not the rewrite target, so a source of /index.html missed / and every route served through the rewrite; this matches any extensionless path.",
+        "regex": "^/(?:[^.]*|index\\.html)$",
         "headers": [
           {
             "key": "Cache-Control",

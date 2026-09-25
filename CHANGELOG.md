@@ -4,6 +4,36 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-09-26
+
+Three defects in the automation and hosting added in 1.4.0, each of which
+reported success while doing the wrong thing.
+
+### Fixed
+
+- **The weekly refresh deployed the previous week's data.** The reusable deploy
+  checked out the commit its calling run started from. The refresh pushes a new
+  commit partway through, so every refresh deployed the snapshot from before it:
+  the live site ran one week behind the repository with every job green. The
+  refresh now passes the commit it pushed and the date it contains, and the
+  deploy fails if the built snapshot does not match that date.
+- **Every scheduled refresh committed and redeployed, whether or not WHO had
+  published.** The snapshot records the date the fetch ran, so the file always
+  differed. The comparison now ignores that field, and the file is left
+  untouched when the figures are unchanged.
+- **The page itself was still cached for an hour.** 1.4.0 set `no-cache` on
+  `/index.html`, but Firebase matches header rules against the requested URL,
+  not the rewrite target, so `/` and every other route kept the default
+  `max-age=3600`. Each release deletes the previous hashed bundles, so a cached
+  page could request scripts that no longer exist. The rule now covers every
+  extensionless path.
+
+### Changed
+
+- `.gitignore` also covers `.env`, Firebase CLI debug logs and service-account
+  key files, so none can be committed to this public repository by accident.
+- README corrected where it had drifted: coverage, spec count and test runtime.
+
 ## [1.4.0] - 2026-08-31
 
 Closes the last gap in the automation, plus an accessibility fix and hosting
