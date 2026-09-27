@@ -62,6 +62,40 @@ export const sameFigures = (a, b) => {
   return withoutStamp(a) === withoutStamp(b);
 };
 
+/**
+ * Country names WHO's own file ships with a character destroyed.
+ *
+ * The CSV holds the bytes EF BF BD — the UTF-8 encoding of U+FFFD, the
+ * replacement character — where the accented letter belongs, so the damage is
+ * upstream, in WHO's export, and the original cannot be recovered from the
+ * file. Each repair is keyed on the exact damaged spelling as well as the code:
+ * if WHO fixes the file, their name passes through untouched.
+ *
+ * Not looked up from Intl.DisplayNames, which would be general but depends on
+ * the ICU data of whichever Node runs the build ("Turkey" on some versions,
+ * "Türkiye" on others), so Node 22 and 24 could write different snapshots.
+ */
+const NAME_REPAIRS = {
+  TR: ["T\uFFFDrkiye", "Türkiye"],
+  RE: ["R\uFFFDunion", "Réunion"],
+  CI: ["C\uFFFDte d'Ivoire", "Côte d'Ivoire"],
+  CW: ["Cura\uFFFDao", "Curaçao"],
+  BL: ["Saint Barth\uFFFDlemy", "Saint Barthélemy"],
+};
+
+/**
+ * @param {string} iso
+ * @param {string} name
+ */
+export const repairName = (iso, name) => {
+  const [damaged, repaired] = NAME_REPAIRS[iso] ?? [];
+  return name === damaged ? repaired : name;
+};
+
+/** Does a name still carry WHO's replacement character? */
+/** @param {string} name */
+export const isDamaged = (name) => name.includes("\uFFFD");
+
 const num = (value) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -130,7 +164,7 @@ export const assemble = (csv, geo) => {
 
       return {
         code: entry.iso,
-        name: entry.name,
+        name: repairName(entry.iso, entry.name),
         lat: geometry?.lat ?? null,
         long: geometry?.long ?? null,
         flag: geometry?.flag ?? null,
@@ -241,6 +275,13 @@ const build = async () => {
   const geo = await get(GEO, "json");
 
   const { updated, global, countries, weeks, history } = assemble(csv, geo);
+
+  // A name WHO has newly damaged ships as it is rather than failing the weekly
+  // refresh over a spelling, but it is reported: "::warning::" is an annotation
+  // on the GitHub Actions run, so it is seen and can be added to NAME_REPAIRS.
+  for (const { code, name } of countries.filter((c) => isDamaged(c.name))) {
+    console.log(`::warning::WHO's name for ${code} has a destroyed character and no repair: ${name}`);
+  }
   const snapshot = {
     updated,
     source: "World Health Organization",
