@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
-import { useSnapshot } from "../hooks/useSnapshot";
-import { SNAPSHOT, okResponse } from "./fixtures";
+import { useHistory, useSnapshot } from "../hooks/useSnapshot";
+import { HISTORY, SNAPSHOT, dataFetch, okResponse } from "./fixtures";
 
 beforeEach(() => {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(okResponse(SNAPSHOT)));
@@ -72,5 +72,25 @@ describe("useSnapshot", () => {
 
     await waitFor(() => expect(fetch).toHaveBeenCalled());
     expect(result.current.error).toBeNull();
+  });
+});
+
+describe("useHistory", () => {
+  it("loads the weekly history with the same load state as the snapshot", async () => {
+    vi.stubGlobal("fetch", vi.fn(dataFetch()));
+    const { result } = renderHook(() => useHistory());
+
+    expect(result.current.isLoading).toBe(true);
+    await waitFor(() => expect(result.current.history).toEqual(HISTORY));
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.error).toBeNull();
+  });
+
+  it("reports a failure instead of loading forever", async () => {
+    vi.stubGlobal("fetch", vi.fn(dataFetch({ history: new Error("down") })));
+    const { result } = renderHook(() => useHistory());
+
+    await waitFor(() => expect(result.current.error).not.toBeNull());
+    expect(result.current.isLoading).toBe(false);
   });
 });

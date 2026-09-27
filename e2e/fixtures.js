@@ -62,18 +62,44 @@ export const SNAPSHOT = {
   weeks: Array.from({ length: 60 }, (_, i) => {
     const date = new Date(Date.UTC(2025, 5, 1) + i * 7 * 86400000);
     const wave = 1 + Math.sin(i / 7) * 0.6;
-    return [
+    return /** @type {[string, number, number]} */ ([
       date.toISOString().slice(0, 10),
       Math.round(40000 * wave),
       Math.round(300 * wave),
-    ];
+    ]);
   }),
 };
 
-/** Serve the fixture snapshot and keep third-party assets off the network. */
+/**
+ * Each country's weekly figures, split from SNAPSHOT.weeks so that every week
+ * sums exactly to the worldwide series, as the real files do. Puerto Rico has
+ * nothing to report and is omitted, as the build omits such countries.
+ */
+export const HISTORY = {
+  weeks: SNAPSHOT.weeks.map(([date]) => date),
+  countries: (() => {
+    const split = (/** @type {number} */ total) => {
+      const us = Math.round(total * 0.5);
+      const india = Math.round(total * 0.3);
+      return [us, india, total - us - india];
+    };
+    const cases = SNAPSHOT.weeks.map(([, c]) => split(c));
+    const deaths = SNAPSHOT.weeks.map(([, , d]) => split(d));
+    const series = (/** @type {number} */ i) => [
+      cases.map((week) => week[i]),
+      deaths.map((week) => week[i]),
+    ];
+    return { US: series(0), IN: series(1), GB: series(2) };
+  })(),
+};
+
+/** Serve the fixture data and keep third-party assets off the network. */
 export const stubApi = async (page) => {
   await page.route("**/data/covid-snapshot.json", (route) =>
     route.fulfill({ json: SNAPSHOT })
+  );
+  await page.route("**/data/covid-history.json", (route) =>
+    route.fulfill({ json: HISTORY })
   );
 
   await page.route("**/tile.openstreetmap.org/**", (route) =>

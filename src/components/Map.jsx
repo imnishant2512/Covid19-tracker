@@ -28,20 +28,29 @@ function Recenter({ center, zoom }) {
  * @param {object} props
  * @param {Array<import("../lib/metrics").Country>} props.countries
  * @param {import("../lib/metrics").MetricKey} props.metric
+ * @param {string|null} [props.period] Set when the figures cover a date range.
  */
-function CountryCircles({ countries, metric }) {
-  const { hex } = METRICS[metric];
+function CountryCircles({ countries, metric, period }) {
+  const { hex, field } = METRICS[metric];
 
   // WHO lists territories the geometry source does not cover. They stay in the
   // totals and the table; they just cannot be placed, and Leaflet throws on a
   // null LatLng.
-  return countries.filter(hasCoordinates).map((country) => (
+  // Nor are countries with nothing to show: a zero-radius circle still draws
+  // its outline, which over a short period dotted the map with hundreds of
+  // points that each read as "cases here".
+  const placed = countries.filter(
+    (country) => hasCoordinates(country) && (country[field] ?? 0) > 0
+  );
+  const max = placed.reduce((largest, country) => Math.max(largest, country[field] ?? 0), 0);
+
+  return placed.map((country) => (
     <Circle
       key={country.code}
       center={/** @type {[number, number]} */ ([country.lat, country.long])}
       fillOpacity={0.4}
       pathOptions={{ color: hex, fillColor: hex }}
-      radius={circleRadius(country, metric)}
+      radius={circleRadius(country[field], max)}
     >
       <Popup>
         <div className="info-container">
@@ -50,6 +59,7 @@ function CountryCircles({ countries, metric }) {
             style={{ backgroundImage: `url(${country.flag})` }}
           />
           <div className="info-name">{country.name}</div>
+          {period && <div className="info-period">{period}</div>}
           <div className="info-confirmed">
             Cases: {formatNumber(country.cases)}
           </div>
@@ -71,8 +81,10 @@ function CountryCircles({ countries, metric }) {
  * @param {import("../lib/metrics").MetricKey} props.metric
  * @param {[number, number]} props.center
  * @param {number} props.zoom
+ * @param {string|null} [props.period] Human description of the date range the
+ *   figures cover, shown in each popup; null for all-time totals.
  */
-function Map({ countries, metric, center, zoom }) {
+function Map({ countries, metric, center, zoom, period = null }) {
   return (
     <div className="map">
       <MapContainer center={center} zoom={zoom} scrollWheelZoom={false}>
@@ -81,7 +93,7 @@ function Map({ countries, metric, center, zoom }) {
           attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
         />
         <Recenter center={center} zoom={zoom} />
-        <CountryCircles countries={countries} metric={metric} />
+        <CountryCircles countries={countries} metric={metric} period={period} />
       </MapContainer>
     </div>
   );

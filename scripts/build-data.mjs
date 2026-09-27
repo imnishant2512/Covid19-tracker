@@ -17,6 +17,7 @@ const WHO_WEEKLY =
   "https://srhdpeuwpubsa.blob.core.windows.net/whdh/COVID/WHO-COVID-19-global-data.csv";
 const GEO = "https://disease.sh/v3/covid-19/countries";
 const OUT = new URL("../public/data/covid-snapshot.json", import.meta.url);
+const HISTORY_OUT = new URL("../public/data/covid-history.json", import.meta.url);
 const WEEKS = 120;
 
 const get = async (url, as = "text") => {
@@ -92,11 +93,17 @@ export const assemble = (csv, geo) => {
     .map(splitRow)
     .filter((cells) => cells.length >= 8 && cells[1]?.length === 2);
 
-  // Latest row per country, plus a global weekly series.
+  // Latest row per country, a global weekly series, and each country's own
+  // weekly figures for the date filter.
   const latestByIso = new Map();
   const series = new Map();
+  const weeklyByIso = new Map();
 
   for (const [date, iso, name, region, newCases, cases, newDeaths, deaths] of rows) {
+    const own = weeklyByIso.get(iso) ?? new Map();
+    own.set(date, [num(newCases), num(newDeaths)]);
+    weeklyByIso.set(iso, own);
+
     const previous = latestByIso.get(iso);
     if (!previous || date > previous.date) {
       latestByIso.set(iso, {
@@ -138,7 +145,10 @@ export const assemble = (csv, geo) => {
   const weeks = [...series.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .slice(-WEEKS)
-    .map(([date, week]) => [date, week.newCases, week.newDeaths]);
+    .map(
+      ([date, week]) =>
+        /** @type {[string, number, number]} */ ([date, week.newCases, week.newDeaths])
+    );
 
   const updated = [...latestByIso.values()].reduce(
     (latest, entry) => (entry.date > latest ? entry.date : latest),
@@ -155,7 +165,39 @@ export const assemble = (csv, geo) => {
     },
     countries,
     weeks,
+    history: buildHistory(weeks, countries, weeklyByIso),
   };
+};
+
+/**
+ * Each country's weekly new cases and deaths, aligned to the global series.
+ *
+ * Shipped as a separate file so the first paint does not wait for it: it is
+ * three times the size of the snapshot and only the date filter and the
+ * per-country chart need it. Countries with nothing to report across the whole
+ * window are omitted, and read back as zeros.
+ *
+ * @param {Array<[string, number, number]>} weeks
+ * @param {Array<{code: string}>} countries
+ * @param {Map<string, Map<string, [number, number]>>} weeklyByIso
+ * @returns {{weeks: string[], countries: Record<string, [number[], number[]]>}}
+ */
+const buildHistory = (weeks, countries, weeklyByIso) => {
+  const dates = weeks.map(([date]) => date);
+  /** @type {Record<string, [number[], number[]]>} */
+  const byCountry = {};
+
+  for (const { code } of countries) {
+    const own = weeklyByIso.get(code);
+    const newCases = dates.map((date) => own?.get(date)?.[0] ?? 0);
+    const newDeaths = dates.map((date) => own?.get(date)?.[1] ?? 0);
+
+    if (newCases.some(Boolean) || newDeaths.some(Boolean)) {
+      byCountry[code] = [newCases, newDeaths];
+    }
+  }
+
+  return { weeks: dates, countries: byCountry };
 };
 
 /**
@@ -198,7 +240,7 @@ const build = async () => {
   console.log("Fetching country geometry…");
   const geo = await get(GEO, "json");
 
-  const { updated, global, countries, weeks } = assemble(csv, geo);
+  const { updated, global, countries, weeks, history } = assemble(csv, geo);
   const snapshot = {
     updated,
     source: "World Health Organization",
@@ -226,13 +268,29 @@ const build = async () => {
     // A missing or unreadable existing file is no reason to skip the write.
   }
 
-  if (previous && sameFigures(previous, snapshot)) {
+  const snapshotChanged = !(previous && sameFigures(previous, snapshot));
+  if (snapshotChanged) assertPlausible(previous, snapshot);
+
+  // The history carries no timestamp, so a plain comparison is enough. It is
+  // checked on its own so a missing file is written even when the snapshot is
+  // unchanged.
+  const historyJson = `${JSON.stringify(history)}\n`;
+  const previousHistory = await readFile(HISTORY_OUT, "utf8").catch(() => null);
+  if (previousHistory !== historyJson) {
+    await writeFile(HISTORY_OUT, historyJson);
+    console.log(
+      `\nWrote public/data/covid-history.json: ` +
+        `${Object.keys(history.countries).length} countries × ${history.weeks.length} weeks, ` +
+        `${(historyJson.length / 1024).toFixed(1)}KB raw, ` +
+        `${(gzipSync(historyJson).length / 1024).toFixed(1)}KB gzipped`
+    );
+  }
+
+  if (!snapshotChanged) {
     console.log(`\nWHO figures are unchanged through ${snapshot.updated}.`);
     console.log("  Left public/data/covid-snapshot.json untouched.");
     return;
   }
-
-  assertPlausible(previous, snapshot);
 
   const json = JSON.stringify(snapshot);
   await writeFile(OUT, `${json}\n`);

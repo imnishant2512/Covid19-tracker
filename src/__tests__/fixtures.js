@@ -36,8 +36,43 @@ export const SNAPSHOT = {
   ],
 };
 
+/**
+ * Mirrors covid-history.json. Each week's countries sum to that week of
+ * SNAPSHOT.weeks, as the real files do, so worldwide and per-country figures
+ * for a range agree.
+ */
+export const HISTORY = {
+  weeks: ["2026-07-19", "2026-07-26", "2026-08-02"],
+  countries: {
+    US: [
+      [200, 300, 100],
+      [10, 5, 2],
+    ],
+    IN: [
+      [300, 400, 200],
+      [2, 4, 2],
+    ],
+  },
+};
+
 export const okResponse = (body) => ({
   ok: true,
   status: 200,
   json: async () => body,
 });
+
+/**
+ * A fetch stub that serves each data file from its own fixture, the way the
+ * app sees them in production.
+ *
+ * @param {{snapshot?: object, history?: object|Error}} [files]
+ */
+export const dataFetch = ({ snapshot = SNAPSHOT, history = HISTORY } = {}) =>
+  async (/** @type {string} */ url) => {
+    if (url.includes("covid-history.json")) {
+      return history instanceof Error
+        ? { ok: false, status: 503, json: async () => ({}) }
+        : okResponse(history);
+    }
+    return okResponse(snapshot);
+  };

@@ -29,9 +29,34 @@
   color: var(--text);
 }
 
+.info-period {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+}
+
+/* .info-new replaced .info-recovered when WHO data dropped recoveries, but the
+   rule still named the old class, leaving the new-cases line unstyled. */
 .info-confirmed,
-.info-recovered,
+.info-new,
 .info-deaths {
   font-size: 16px;
   margin-top: var(--space-1);
+}
+
+/*
+ * Leaflet paints popups white with fixed dark text, but the content above uses
+ * the theme's text colour, so in dark mode the country name was light grey on
+ * white and all but invisible. Theme the popup itself instead. The selectors
+ * match Leaflet's own specificity plus the .map scope, so they win without
+ * !important.
+ */
+.map .leaflet-popup-content-wrapper,
+.map .leaflet-popup-tip {
+  background-color: var(--surface);
+  color: var(--text);
+}
+
+.map .leaflet-container a.leaflet-popup-close-button {
+  color: var(--text-muted);
 }

@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { SNAPSHOT, stubApi } from "./fixtures.js";
+import { HISTORY, SNAPSHOT, stubApi } from "./fixtures.js";
+import { prettyPrintStat } from "../src/lib/format.js";
 
 const CASES_RED = "#cc1034";
 const DEATHS_GREY = "#6c757d";
@@ -21,6 +22,18 @@ const tileZooms = (page) =>
         .map(Number)
     ),
   ]);
+
+/**
+ * Does the page scroll sideways? Measured only once the lazy map and chart
+ * have rendered, since either could be what overflows.
+ */
+const overflowsHorizontally = async (page) => {
+  await expect(page.locator(".leaflet-container")).toBeVisible();
+  await expect(page.locator("canvas")).toBeVisible();
+  return page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
+  );
+};
 
 const selectCountry = async (page, name) => {
   await page.getByLabel("Select a country").click();
@@ -107,13 +120,15 @@ test("renders the trend chart on a canvas", async ({ page }) => {
   await expect(canvas).toBeVisible();
 
   // Chart.js draws nothing if the date adapter fails to parse the ISO dates.
-  const isPainted = await canvas.evaluate((node) => {
-    const el = /** @type {HTMLCanvasElement} */ (node);
-    const ctx = el.getContext("2d");
-    const { data } = ctx.getImageData(0, 0, el.width, el.height);
-    return data.some((channel, i) => i % 4 === 3 && channel !== 0);
-  });
-  expect(isPainted).toBe(true);
+  // Polled: the canvas exists before Chart.js has painted its first frame.
+  const isPainted = () =>
+    canvas.evaluate((node) => {
+      const el = /** @type {HTMLCanvasElement} */ (node);
+      const ctx = el.getContext("2d");
+      const { data } = ctx.getImageData(0, 0, el.width, el.height);
+      return data.some((channel, i) => i % 4 === 3 && channel !== 0);
+    });
+  await expect.poll(isPainted).toBe(true);
 });
 
 test("selecting a country updates the stats and flies the map to it", async ({
@@ -239,10 +254,112 @@ test("is usable at a mobile viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByText("777.6m")).toBeVisible();
 
-  const overflows = await page.evaluate(
-    () =>
-      document.documentElement.scrollWidth >
-      document.documentElement.clientWidth + 1
+  expect(await overflowsHorizontally(page)).toBe(false);
+});
+
+// ---------------------------------------------------------------------------
+// Date filter
+// ---------------------------------------------------------------------------
+
+const choosePeriod = async (page, name) => {
+  await page.getByLabel("Time period").click();
+  await page.getByRole("option", { name, exact: true }).click();
+};
+
+/** Worldwide cases over the last `n` weeks of the fixture, as a card shows them. */
+const lastWeeksCases = (n) =>
+  prettyPrintStat(SNAPSHOT.weeks.slice(-n).reduce((total, [, cases]) => total + cases, 0));
+
+test("filters the whole dashboard to a period and keeps it in the URL", async ({ page }) => {
+  await expect(page.getByText("777.6m")).toBeVisible();
+
+  await choosePeriod(page, "Last 3 months");
+
+  await expect(page).toHaveURL(/\?period=3m$/);
+  const casesCard = page.getByRole("button", { name: /coronavirus cases/i });
+  await expect(casesCard).toContainText(lastWeeksCases(13));
+  await expect(casesCard).toContainText(/reported \d+ \w{3} \d{4} – \d+ \w{3} \d{4}/);
+  await expect(page.locator(".app__provenance")).toContainText("Showing figures reported");
+
+  // A reload, or a shared link, restores the same view.
+  await page.reload();
+  await expect(page.getByLabel("Time period")).toHaveText("Last 3 months");
+  await expect(casesCard).toContainText(lastWeeksCases(13));
+
+  await choosePeriod(page, "All time");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByText("777.6m")).toBeVisible();
+});
+
+test("picks a custom range from WHO's reporting weeks", async ({ page }) => {
+  await expect(page.getByText("777.6m")).toBeVisible();
+
+  await choosePeriod(page, "Custom range");
+  await expect(page).toHaveURL(/\?from=\d{4}-\d{2}-\d{2}&to=\d{4}-\d{2}-\d{2}$/);
+
+  // Narrow it to the final week alone.
+  const last = HISTORY.weeks.at(-1);
+  await page.getByLabel("From week").click();
+  const options = page.getByRole("option");
+  await options.last().click();
+
+  await expect(page).toHaveURL((url) => url.search === `?from=${last}&to=${last}`);
+  await expect(page.getByRole("button", { name: /coronavirus cases/i })).toContainText(
+    lastWeeksCases(1)
   );
-  expect(overflows).toBe(false);
+});
+
+test("totals countries over the period and re-draws the map to its scale", async ({
+  page,
+}) => {
+  await page.goto("/?period=4w");
+
+  // The table sums each country's weeks; the fixture gives the US half of
+  // every week, India 30% and the UK the rest.
+  const sumLast4 = (code) =>
+    HISTORY.countries[code][0].slice(-4).reduce((total, value) => total + value, 0);
+  const first = page.locator("tbody tr").first();
+  await expect(first).toContainText("United States of America");
+  await expect(first).toContainText(sumLast4("US").toLocaleString("en-US"));
+
+  // Scaled to the largest value in view, so a four-week period is drawn at
+  // the same size as all-time totals rather than as invisible dots. The map is
+  // a lazy chunk that can finish after the table, so wait for its circles
+  // before measuring them.
+  const mapped = SNAPSHOT.countries.filter((c) => c.lat != null && HISTORY.countries[c.code]);
+  await expect(page.locator(".leaflet-overlay-pane path")).toHaveCount(mapped.length);
+  const largest = await page.evaluate(() =>
+    Math.max(
+      ...[...document.querySelectorAll(".leaflet-overlay-pane path")].map(
+        (path) => path.getBoundingClientRect().width
+      )
+    )
+  );
+  expect(largest).toBeGreaterThan(40);
+});
+
+test("charts the selected country, and says which period a popup covers", async ({
+  page,
+}) => {
+  await page.goto("/?period=4w");
+
+  // Before any country is selected: selecting one flies the map, and a click
+  // mid-flight lands on a moving circle.
+  await page.locator(".leaflet-overlay-pane path").last().click();
+  await expect(page.locator(".leaflet-popup .info-period")).toContainText(/^Reported /);
+
+  await expect(page.getByText("Worldwide weekly cases")).toBeVisible();
+  await selectCountry(page, "India");
+  await expect(page.getByText("India weekly cases")).toBeVisible();
+  await expect(page.locator("canvas")).toBeVisible();
+});
+
+test("fits a custom range on a phone", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByText("777.6m")).toBeVisible();
+
+  await choosePeriod(page, "Custom range");
+  await expect(page.getByLabel("To week")).toBeVisible();
+
+  expect(await overflowsHorizontally(page)).toBe(false);
 });

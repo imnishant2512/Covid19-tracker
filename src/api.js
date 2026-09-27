@@ -22,5 +22,24 @@ export const fetchSnapshot = async (signal) => {
   return response.json();
 };
 
+const HISTORY_URL = `${import.meta.env.BASE_URL}data/covid-history.json`;
+
+/**
+ * Each country's weekly figures, for the date filter and the per-country
+ * chart. A separate request so the first paint does not wait for it.
+ *
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<import("./lib/range").History>}
+ */
+export const fetchHistory = async (signal) => {
+  const response = await fetch(HISTORY_URL, { signal });
+
+  if (!response.ok) {
+    throw new Error(`Could not load the weekly history (${response.status})`);
+  }
+
+  return response.json();
+};
+
 /** An abort is a cancellation, not a failure — never surface it to the user. */
 export const isAbort = (error) => error?.name === "AbortError";

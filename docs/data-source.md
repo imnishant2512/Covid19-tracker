@@ -38,7 +38,10 @@ Worldometers went quiet. The consequences are visible in the data itself:
 size applies. It fetches WHO's weekly file, joins it with country geometry, and
 writes `public/data/covid-snapshot.json` — about 40 KB, 8 KB gzipped. The app
 loads that in a single same-origin request, which is fewer requests and less
-data than the previous runtime API calls.
+data than the previous runtime API calls. A second file,
+`public/data/covid-history.json` (about 15 KB gzipped), holds each country's
+weekly figures for the date filter; countries with nothing to report in the
+window are left out of it and read as zeros.
 
 `.github/workflows/refresh-data.yml` re-runs this weekly and commits the result
 — then deploys it — only when the figures actually change, after verifying the

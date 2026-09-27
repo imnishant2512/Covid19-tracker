@@ -4,6 +4,43 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-09-27
+
+### Added
+
+- **Date filter.** Show all time, the last 4 weeks, 3 months, 6 months or year,
+  or any custom run of WHO reporting weeks. The cards, table, map and chart all
+  follow it: cases and deaths become the totals reported in the period, and new
+  cases those of its final week. Custom ranges pick from the actual reporting
+  weeks, so nothing is rounded behind the user's back.
+- **The period is kept in the URL**, so a filtered view survives a reload and can
+  be bookmarked or shared. Presets are stored as relative periods
+  (`?period=3m`), so a bookmarked "last 3 months" stays current as data arrives;
+  custom ranges as explicit weeks (`?from=…&to=…`).
+- **The chart follows the selected country** instead of always showing the
+  world.
+- `covid-history.json`, each country's weekly figures (about 15KB gzipped),
+  requested alongside the snapshot so the first paint does not wait for it. The
+  deploy refuses a build whose history and snapshot cover different weeks.
+
+### Changed
+
+- **Map circles are scaled to the largest value in view** rather than by fixed
+  per-metric multipliers. Those were tuned for all-time totals, and drew a
+  three-month period as dots too small to see.
+- Figures under a thousand show as whole numbers: "830", not "830.0".
+
+### Fixed
+
+- **Map popups were unreadable in dark mode.** Leaflet paints them white, but
+  the country name used the theme's text colour — light grey on white. Popups
+  now use the theme's surface and text colours.
+- Countries with nothing to show for the selected metric no longer draw a
+  circle. A zero-radius circle still drew its outline, so a short period
+  dotted the map with hundreds of points that each read as "cases here".
+- The new-cases line in map popups was unstyled: the rule still targeted the
+  removed "recovered" line.
+
 ## [1.5.1] - 2026-09-27
 
 ### Fixed

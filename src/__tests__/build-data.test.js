@@ -181,3 +181,39 @@ describe("assertPlausible", () => {
     ).not.toThrow();
   });
 });
+
+describe("assemble: weekly history", () => {
+  it("aligns each country's weeks with the global series", () => {
+    const { history, weeks } = assemble(CSV, GEO);
+    expect(history.weeks).toEqual(weeks.map(([date]) => date));
+    expect(history.countries.US).toEqual([
+      [10, 20],
+      [1, 2],
+    ]);
+  });
+
+  it("sums, week by week, to the global series", () => {
+    // The date filter totals countries from the history and the world from the
+    // snapshot; this is what keeps the table adding up to the cards.
+    const { history, weeks } = assemble(CSV, GEO);
+    weeks.forEach(([, cases, deaths], i) => {
+      const sum = (k) =>
+        Object.values(history.countries).reduce((t, series) => t + series[k][i], 0);
+      expect(sum(0)).toBe(cases);
+      expect(sum(1)).toBe(deaths);
+    });
+  });
+
+  it("zero-fills a week a country did not report", () => {
+    // Puerto Rico reports blank new cases on 08-30, which WHO means as none.
+    expect(assemble(CSV, GEO).history.countries.PR).toEqual([
+      [0, 5],
+      [0, 0],
+    ]);
+  });
+
+  it("omits countries with nothing to report in the window", () => {
+    // Kosovo has a cumulative total but no new cases or deaths at all.
+    expect(assemble(CSV, GEO).history.countries).not.toHaveProperty("XK");
+  });
+});

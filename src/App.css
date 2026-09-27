@@ -29,6 +29,13 @@
   line-height: 1.3;
 }
 
+.app__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
 .app__dropdown {
   min-width: 180px;
   background-color: var(--surface);
@@ -54,10 +61,11 @@
   flex-grow: 1;
 }
 
+/* Sentence case, written out: capitalising via CSS turned country names such
+   as "United Kingdom of Great Britain…" into "…Of Great Britain…". */
 .app__graphTitle {
   margin-top: var(--space-4);
   margin-bottom: var(--space-4);
-  text-transform: capitalize;
 }
 
 .app__graph {
@@ -97,6 +105,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .app__controls,
   .app__dropdown {
     width: 100%;
   }
