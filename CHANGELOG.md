@@ -4,6 +4,22 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.3] - 2026-09-27
+
+### Changed
+
+- **The data refresh checks daily instead of on Mondays.** WHO publishes weekly
+  but not on a fixed day, and a Monday-only check added up to four days to its
+  own delay: the update WHO posted at 11:59 UTC on Thursday 24 September waited
+  until the following Monday. It now runs at 14:17 UTC, so a late-morning
+  update is live the same day. A day with nothing new commits and deploys
+  nothing, as before.
+
+### Added
+
+- MIT license. Until now the public repository had none, which legally meant
+  all rights reserved.
+
 ## [1.6.2] - 2026-09-27
 
 ### Fixed

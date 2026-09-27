@@ -1,6 +1,7 @@
 {
   "name": "covid-19-tracker",
-  "version": "1.6.2",
+  "version": "1.6.3",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "scripts": {

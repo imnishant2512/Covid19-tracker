@@ -1,10 +1,17 @@
 name: Refresh COVID data
 
-# WHO publishes weekly, so check on Mondays and open a commit only when the
-# figures have actually moved. Also runnable on demand.
+# WHO publishes weekly but not on a fixed day, so check daily and commit only
+# when the figures have actually moved; a day with nothing new costs one short
+# run and changes nothing. A Monday-only check added up to four days to WHO's
+# own delay: the update that landed at 11:59 UTC on Thursday 24 September 2026
+# waited until the following Monday.
+#
+# 14:17 UTC catches a late-morning update the same day. The odd minute avoids
+# the top of the hour, when GitHub's scheduler is busiest and runs start late.
+# Also runnable on demand.
 on:
   schedule:
-    - cron: "0 6 * * 1"
+    - cron: "17 14 * * *"
   workflow_dispatch:
 
 permissions:
@@ -81,6 +88,6 @@ jobs:
     uses: ./.github/workflows/deploy.yml
     secrets: inherit
     with:
-      reason: "weekly WHO data refresh"
+      reason: "WHO data refresh"
       ref: ${{ needs.refresh.outputs.sha }}
       expected-updated: ${{ needs.refresh.outputs.updated }}
