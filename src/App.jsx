@@ -17,6 +17,7 @@ import {
   METRIC_KEYS,
   WORLDWIDE,
   WORLD_VIEW,
+  hasCoordinates,
   sortByMetric,
 } from "./lib/metrics";
 import { formatNumber, prettyPrintStat } from "./lib/format";
@@ -53,8 +54,10 @@ function App() {
   const mapView = useMemo(() => {
     if (country === WORLDWIDE) return WORLD_VIEW;
 
+    // A territory with no geometry still has figures to show, but nowhere to
+    // fly to.
     const match = countries.find((entry) => entry.code === country);
-    if (!match) return WORLD_VIEW;
+    if (!match || !hasCoordinates(match)) return WORLD_VIEW;
 
     return {
       center: /** @type {[number, number]} */ ([match.lat, match.long]),

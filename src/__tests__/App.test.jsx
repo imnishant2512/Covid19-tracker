@@ -103,6 +103,43 @@ describe("App", () => {
     expect(screen.getByTestId("map")).toHaveAttribute("data-center", "20,10");
   });
 
+  it("keeps the world view for a country that has no coordinates", async () => {
+    // WHO lists territories the geometry source does not cover. Selecting one
+    // must still show its figures, without flying the map to [null, null].
+    const unmapped = {
+      ...SNAPSHOT.countries[0],
+      code: "PR",
+      name: "Puerto Rico",
+      lat: null,
+      long: null,
+      flag: null,
+      cases: 1252713,
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        okResponse({ ...SNAPSHOT, countries: [...SNAPSHOT.countries, unmapped] })
+      )
+    );
+
+    const user = userEvent.setup();
+    render(<App />);
+    await screen.findByText("Puerto Rico");
+
+    await selectCountry(user, "India");
+    await waitFor(() =>
+      expect(screen.getByTestId("map")).toHaveAttribute("data-center", "20,77")
+    );
+
+    await selectCountry(user, "Puerto Rico");
+
+    await waitFor(() =>
+      expect(screen.getByTestId("map")).toHaveAttribute("data-center", "20,10")
+    );
+    expect(screen.getByTestId("map")).toHaveAttribute("data-zoom", "2");
+    expect(await screen.findByText("1.3m")).toBeInTheDocument();
+  });
+
   it("shows the selected country's own figures", async () => {
     const user = userEvent.setup();
     render(<App />);

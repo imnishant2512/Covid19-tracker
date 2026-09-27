@@ -23,22 +23,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Tags are needed to work out which ones still lack a release.
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
 
       - name: Work out which tags to publish
         id: plan
         run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
             TAGS="${GITHUB_REF#refs/tags/}"
-          elif [ -n "${{ inputs.tag }}" ]; then
-            TAGS="${{ inputs.tag }}"
+          elif [ -n "$INPUT_TAG" ]; then
+            # Read from the environment rather than pasted into the script, so
+            # the input is data and never shell code.
+            if ! printf '%s' "$INPUT_TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+              echo "::error::Not a release tag: $INPUT_TAG"
+              exit 1
+            fi
+            TAGS="$INPUT_TAG"
           else
             # Backfill: every v* tag that does not already have a release.
             TAGS=""
@@ -55,11 +61,12 @@ jobs:
           echo "tags=$(echo $TAGS | xargs)" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ github.token }}
+          INPUT_TAG: ${{ inputs.tag }}
 
       - name: Create the releases
         if: steps.plan.outputs.tags != ''
         run: |
-          for TAG in ${{ steps.plan.outputs.tags }}; do
+          for TAG in $TAGS; do
             echo "::group::$TAG"
 
             # Fails loudly if the changelog has no section for this tag, rather
@@ -82,6 +89,7 @@ jobs:
           done
         env:
           GH_TOKEN: ${{ github.token }}
+          TAGS: ${{ steps.plan.outputs.tags }}
 
       - name: Summary
         run: |

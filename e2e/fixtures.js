@@ -45,6 +45,19 @@ export const SNAPSHOT = {
       newCases: 300,
       newDeaths: 1,
     },
+    {
+      // A WHO territory the geometry source does not cover: in the totals and
+      // the table, but with nowhere to be drawn.
+      code: "PR",
+      name: "Puerto Rico",
+      lat: null,
+      long: null,
+      flag: null,
+      cases: 1252713,
+      deaths: 5938,
+      newCases: 0,
+      newDeaths: 0,
+    },
   ],
   weeks: Array.from({ length: 60 }, (_, i) => {
     const date = new Date(Date.UTC(2025, 5, 1) + i * 7 * 86400000);

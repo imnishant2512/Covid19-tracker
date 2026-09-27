@@ -10,6 +10,11 @@ on:
 permissions:
   contents: write
 
+# A manual run overlapping the schedule would race it to push.
+concurrency:
+  group: refresh-data
+  cancel-in-progress: false
+
 jobs:
   refresh:
     name: Regenerate the data snapshot
@@ -20,9 +25,9 @@ jobs:
       updated: ${{ steps.commit.outputs.updated }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
           cache: npm
@@ -68,6 +73,9 @@ jobs:
     name: Publish the refreshed data
     needs: refresh
     if: needs.refresh.outputs.changed == 'true'
+    # Only the refresh job pushes; the deploy just reads the commit.
+    permissions:
+      contents: read
     uses: ./.github/workflows/deploy.yml
     secrets: inherit
     with:

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { MapContainer, TileLayer, Circle, Popup, useMap } from "react-leaflet";
-import { METRICS, circleRadius } from "../lib/metrics";
+import { METRICS, circleRadius, hasCoordinates } from "../lib/metrics";
 import { formatNumber } from "../lib/format";
 import "leaflet/dist/leaflet.css";
 import "./Map.css";
@@ -32,7 +32,10 @@ function Recenter({ center, zoom }) {
 function CountryCircles({ countries, metric }) {
   const { hex } = METRICS[metric];
 
-  return countries.map((country) => (
+  // WHO lists territories the geometry source does not cover. They stay in the
+  // totals and the table; they just cannot be placed, and Leaflet throws on a
+  // null LatLng.
+  return countries.filter(hasCoordinates).map((country) => (
     <Circle
       key={country.code}
       center={/** @type {[number, number]} */ ([country.lat, country.long])}
