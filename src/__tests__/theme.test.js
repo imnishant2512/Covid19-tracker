@@ -5,7 +5,7 @@
  */
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { palette, paletteDark, withAlpha } from "../theme";
+import { palette, paletteDark, surfaces, withAlpha } from "../theme";
 
 const tokens = readFileSync(
   new URL("../styles/tokens.css", import.meta.url),
@@ -52,9 +52,29 @@ describe("palette and tokens", () => {
     expect(paletteDark.deaths).toBe(darkToken("metric-deaths"));
   });
 
+  it("gives MUI the same surfaces and text colours as the stylesheet", () => {
+    // The regression: MUI used its own defaults, so in dark mode the cards
+    // were a neutral grey beside the tokens' blue-grey map frame and table.
+    const dark = tokens.slice(tokens.indexOf("prefers-color-scheme: dark"));
+    const darkToken = (name) =>
+      dark.match(new RegExp(`--${name}:\\s*([^;]+);`))?.[1].trim();
+    const names = {
+      page: "page-bg",
+      surface: "surface",
+      text: "text",
+      textMuted: "text-muted",
+      border: "border",
+    };
+
+    for (const [key, name] of Object.entries(names)) {
+      expect(surfaces.light[key], `light ${name}`).toBe(token(name));
+      expect(surfaces.dark[key], `dark ${name}`).toBe(darkToken(name));
+    }
+  });
+
   it("meets WCAG AA against the card surface in both schemes", () => {
     const surface = token("surface");
-    const darkSurface = "#1b2027";
+    const darkSurface = surfaces.dark.surface;
 
     for (const [name, hex] of Object.entries(palette)) {
       // Regression: the original amber (#f2a900) sat at 2.01:1, failing even

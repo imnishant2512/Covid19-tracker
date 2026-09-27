@@ -363,3 +363,33 @@ test("fits a custom range on a phone", async ({ page }) => {
 
   expect(await overflowsHorizontally(page)).toBe(false);
 });
+
+test("ends both columns level on a desktop screen", async ({ page }) => {
+  // Regression: the map was a fixed 500px, so the left column stopped
+  // 140-160px above the panel beside it at every desktop width.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect(page.locator(".leaflet-container")).toBeVisible();
+  await expect(page.locator("canvas")).toBeVisible();
+
+  const bottom = (selector) =>
+    page.locator(selector).evaluate((el) => el.getBoundingClientRect().bottom);
+  await expect.poll(async () => Math.abs((await bottom(".map")) - (await bottom(".app__right")))).toBeLessThanOrEqual(1);
+
+  // And Leaflet has been told: its container fills the frame it sits in.
+  const frame = await page.locator(".map").boundingBox();
+  const leaflet = await page.locator(".leaflet-container").boundingBox();
+  expect(frame.y + frame.height - (leaflet.y + leaflet.height)).toBeLessThanOrEqual(17);
+});
+
+test("uses the tracker's own icon, not the template's React logo", async ({ page, request }) => {
+  const svg = page.locator('link[rel="icon"][type="image/svg+xml"]');
+  await expect(svg).toHaveAttribute("href", "/favicon.svg");
+
+  const response = await request.get("/favicon.svg");
+  expect(response.ok()).toBe(true);
+  expect(await response.text()).toContain("#cc1034");
+  await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute(
+    "href",
+    "/apple-touch-icon.png"
+  );
+});

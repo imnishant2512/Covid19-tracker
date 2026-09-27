@@ -2,14 +2,17 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="/favicon.ico" />
+    <!-- The SVG is the source; the .ico is for browsers without SVG favicon
+         support, and sizes="32x32" stops Chrome preferring it over the SVG. -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#cc1034" />
     <meta
       name="description"
       content="COVID-19 dashboard using World Health Organization figures: worldwide and per-country cases and deaths, an interactive map, and a 120-week trend chart."
     />
-    <link rel="apple-touch-icon" href="/logo192.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
     <!-- Country flags load from here, but only when a map popup is opened, so
          a hint is enough; preconnect would open a connection on every visit. -->
