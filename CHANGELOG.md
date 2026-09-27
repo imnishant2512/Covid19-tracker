@@ -4,6 +4,18 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.2] - 2026-09-27
+
+### Fixed
+
+- **Five country names showed a "�"**: Türkiye, Réunion, Côte d'Ivoire, Curaçao
+  and Saint Barthélemy. The damage is in WHO's own file, which holds the bytes
+  for the replacement character itself where the accented letter belongs, so
+  nothing downstream could decode it back. The data build repairs these names,
+  keyed on the exact damaged spelling so a fix upstream passes through
+  untouched, and reports any newly damaged name as a warning on the refresh
+  run instead of shipping it silently.
+
 ## [1.6.1] - 2026-09-27
 
 ### Fixed

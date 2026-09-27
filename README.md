@@ -106,7 +106,7 @@ Two layers:
 - **Unit and component** (Vitest + Testing Library) covers the helpers, the API
   client and every component, with a regression test for each bug listed in the
   changelog. CI enforces 85% coverage; the suite currently sits at 98.7%
-  statements across 161 specs.
+  statements across 165 specs.
 - **End-to-end** (Playwright) drives the real production bundle in Chromium,
   because jsdom cannot prove that Leaflet paints, that Chart.js reaches a
   canvas, or that the lazy chunks load. API calls and map tiles are stubbed from

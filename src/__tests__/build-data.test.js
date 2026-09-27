@@ -7,6 +7,8 @@ import { describe, expect, it } from "vitest";
 import {
   assemble,
   assertPlausible,
+  isDamaged,
+  repairName,
   sameFigures,
 } from "../../scripts/build-data.mjs";
 
@@ -215,5 +217,46 @@ describe("assemble: weekly history", () => {
   it("omits countries with nothing to report in the window", () => {
     // Kosovo has a cumulative total but no new cases or deaths at all.
     expect(assemble(CSV, GEO).history.countries).not.toHaveProperty("XK");
+  });
+});
+
+describe("country names WHO ships damaged", () => {
+  // WHO's CSV holds EF BF BD, the UTF-8 encoding of the replacement character,
+  // where the accented letter belongs, so "Türkiye" arrived as "T\uFFFDrkiye".
+  const damagedCsv = [
+    "Date_reported,Country_code,Country,WHO_region,New_cases,Cumulative_cases,New_deaths,Cumulative_deaths",
+    "2026-09-06,TR,T\uFFFDrkiye,EUR,1,100,0,10",
+    "2026-09-06,CI,C\uFFFDte d'Ivoire,AFR,1,50,0,5",
+    "2026-09-06,CW,Cura\uFFFDao,AMR,1,40,0,4",
+    "2026-09-06,RE,R\uFFFDunion,AFR,1,30,0,3",
+    "2026-09-06,BL,Saint Barth\uFFFDlemy,AMR,1,20,0,2",
+  ].join("\n");
+
+  it("repairs every damaged name in WHO's current file", () => {
+    const names = assemble(damagedCsv, []).countries.map((c) => c.name);
+    expect(names).toEqual([
+      "Türkiye",
+      "Côte d'Ivoire",
+      "Curaçao",
+      "Réunion",
+      "Saint Barthélemy",
+    ]);
+    expect(names.some(isDamaged)).toBe(false);
+  });
+
+  it("leaves a name alone once WHO fixes it upstream", () => {
+    expect(repairName("TR", "Türkiye")).toBe("Türkiye");
+    expect(repairName("TR", "Turkey")).toBe("Turkey");
+  });
+
+  it("repairs only the exact damaged spelling for that country", () => {
+    // Keyed on both, so an unrelated name can never be rewritten.
+    expect(repairName("FR", "T\uFFFDrkiye")).toBe("T\uFFFDrkiye");
+    expect(repairName("TR", "T\uFFFDrky")).toBe("T\uFFFDrky");
+  });
+
+  it("recognises a damaged name it has no repair for", () => {
+    expect(isDamaged("Sao Tom\uFFFD")).toBe(true);
+    expect(isDamaged("São Tomé and Príncipe")).toBe(false);
   });
 });
