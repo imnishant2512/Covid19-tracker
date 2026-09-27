@@ -66,13 +66,19 @@ const num = (value) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
-const build = async () => {
-  console.log("Fetching WHO weekly data…");
-  const csv = await get(WHO_WEEKLY);
-
-  console.log("Fetching country geometry…");
-  const geo = await get(GEO, "json");
-
+/**
+ * Turn WHO's weekly CSV and the country geometry into the snapshot's figures.
+ *
+ * Every WHO country is kept, whether or not it has geometry. Keeping only the
+ * mapped ones silently dropped nine territories — Puerto Rico and Kosovo among
+ * them — from the table, the picker and, worst, the worldwide totals, which
+ * then understated WHO's own figures by 1.66 million cases. A country without
+ * geometry gets null coordinates and is simply left off the map.
+ *
+ * @param {string} csv
+ * @param {Array<{countryInfo?: {iso2?: string, lat?: number, long?: number, flag?: string}}>} geo
+ */
+export const assemble = (csv, geo) => {
   const geoByIso = new Map(
     geo
       .filter((entry) => entry.countryInfo?.iso2 && entry.countryInfo?.lat != null)
@@ -114,21 +120,19 @@ const build = async () => {
   const countries = [...latestByIso.values()]
     .map((entry) => {
       const geometry = geoByIso.get(entry.iso);
-      if (!geometry) return null;
 
       return {
         code: entry.iso,
         name: entry.name,
-        lat: geometry.lat,
-        long: geometry.long,
-        flag: geometry.flag,
+        lat: geometry?.lat ?? null,
+        long: geometry?.long ?? null,
+        flag: geometry?.flag ?? null,
         cases: entry.cases,
         deaths: entry.deaths,
         newCases: entry.newCases,
         newDeaths: entry.newDeaths,
       };
     })
-    .filter(Boolean)
     .sort((a, b) => b.cases - a.cases);
 
   const weeks = [...series.entries()]
@@ -141,17 +145,66 @@ const build = async () => {
     ""
   );
 
-  const snapshot = {
+  return {
     updated,
-    source: "World Health Organization",
-    sourceUrl: "https://data.who.int/dashboards/covid19/data",
-    generatedAt: new Date().toISOString().slice(0, 10),
     global: {
       cases: countries.reduce((total, c) => total + c.cases, 0),
       deaths: countries.reduce((total, c) => total + c.deaths, 0),
       newCases: countries.reduce((total, c) => total + c.newCases, 0),
       newDeaths: countries.reduce((total, c) => total + c.newDeaths, 0),
     },
+    countries,
+    weeks,
+  };
+};
+
+/**
+ * Refuse a snapshot that looks like a broken upstream rather than real news.
+ *
+ * The refresh commits and deploys unattended, and its tests run against
+ * fixtures, so nothing else would stop an empty geometry response or a
+ * truncated CSV from being published as the week's figures.
+ *
+ * @param {{updated: string, countries: unknown[]}|null} previous
+ * @param {{updated: string, countries: unknown[], weeks: unknown[]}} next
+ */
+export const assertPlausible = (previous, next) => {
+  if (!next.updated || next.countries.length === 0 || next.weeks.length === 0) {
+    throw new Error("The new snapshot is empty; refusing to write it.");
+  }
+  if (!previous) return;
+
+  if (next.updated < previous.updated) {
+    throw new Error(
+      `The new snapshot goes back in time (${previous.updated} → ${next.updated}).`
+    );
+  }
+
+  // WHO's country list is stable; losing more than a handful means a fetch or
+  // parse went wrong, not that countries stopped existing.
+  const lost = previous.countries.length - next.countries.length;
+  if (lost > 5) {
+    throw new Error(
+      `The new snapshot has ${lost} fewer countries than the last one ` +
+        `(${previous.countries.length} → ${next.countries.length}).`
+    );
+  }
+};
+
+const build = async () => {
+  console.log("Fetching WHO weekly data…");
+  const csv = await get(WHO_WEEKLY);
+
+  console.log("Fetching country geometry…");
+  const geo = await get(GEO, "json");
+
+  const { updated, global, countries, weeks } = assemble(csv, geo);
+  const snapshot = {
+    updated,
+    source: "World Health Organization",
+    sourceUrl: "https://data.who.int/dashboards/covid19/data",
+    generatedAt: new Date().toISOString().slice(0, 10),
+    global,
     countries,
     weeks,
   };
@@ -166,18 +219,20 @@ const build = async () => {
   //
   // Compare everything except that field, and leave the file untouched when the
   // figures have not moved.
-  const previous = await readFile(OUT, "utf8").catch(() => null);
-  if (previous) {
-    try {
-      if (sameFigures(JSON.parse(previous), snapshot)) {
-        console.log(`\nWHO figures are unchanged through ${snapshot.updated}.`);
-        console.log("  Left public/data/covid-snapshot.json untouched.");
-        return;
-      }
-    } catch {
-      // An unreadable existing file is no reason to skip the write.
-    }
+  let previous = null;
+  try {
+    previous = JSON.parse(await readFile(OUT, "utf8"));
+  } catch {
+    // A missing or unreadable existing file is no reason to skip the write.
   }
+
+  if (previous && sameFigures(previous, snapshot)) {
+    console.log(`\nWHO figures are unchanged through ${snapshot.updated}.`);
+    console.log("  Left public/data/covid-snapshot.json untouched.");
+    return;
+  }
+
+  assertPlausible(previous, snapshot);
 
   const json = JSON.stringify(snapshot);
   await writeFile(OUT, `${json}\n`);

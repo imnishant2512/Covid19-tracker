@@ -7,7 +7,12 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  reporter: process.env.CI ? "github" : "list",
+  // CI also writes the HTML report, which carries the traces and screenshots
+  // from any failure or retry. With the GitHub reporter alone there was nothing
+  // for ci.yml to upload, so a flaky failure left no evidence behind.
+  reporter: process.env.CI
+    ? [["github"], ["html", { open: "never" }]]
+    : "list",
 
   use: {
     baseURL: `http://localhost:${PORT}`,

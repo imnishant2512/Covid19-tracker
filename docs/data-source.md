@@ -6,8 +6,9 @@ being restated in each file that touches the data.
 
 ## The problem
 
-As of 2026, no public COVID data source is at once **accurate**, **reachable
-from a browser**, and **small**. All three were tested directly:
+When this was tested in August 2026, no public COVID data source was at once
+**accurate**, **reachable from a browser**, and **small**. All three were
+tested directly:
 
 | Source | Latest data | CORS | Practical in a browser |
 | --- | --- | --- | --- |
@@ -40,17 +41,24 @@ loads that in a single same-origin request, which is fewer requests and less
 data than the previous runtime API calls.
 
 `.github/workflows/refresh-data.yml` re-runs this weekly and commits the result
-only when the figures actually change, after verifying the app still lints,
-tests and builds.
+— then deploys it — only when the figures actually change, after verifying the
+app still lints, tests and builds. The script refuses to write a snapshot that
+is empty, goes back in time, or has lost more than a handful of countries, since
+those mean a broken upstream rather than real news and nothing downstream would
+otherwise stop it being published.
 
 ## Consequences worth knowing
 
 - **No recovery figures.** WHO does not publish them, so the original
   "Recovered" metric has no source. It is replaced by newly reported cases,
   the only genuinely current signal in the data.
-- **Weekly, not daily.** Only around 80 countries still report new cases.
-  Cumulative totals cover 225 countries; recent activity is far sparser. That
-  is the state of global COVID reporting, not a gap in the app.
+- **Weekly, not daily.** In a typical recent week fewer than 40 countries
+  report any new cases (about 90 over the past year). Cumulative totals cover
+  234 countries and territories; recent activity is far sparser. That is the
+  state of global COVID reporting, not a gap in the app.
 - **Country geometry still comes from disease.sh.** It carries coordinates and
   flag images but no case figures, and borders do not go stale the way counts
-  do.
+  do. It does not cover every WHO territory — Puerto Rico, Kosovo and seven
+  others are missing — so those appear in the totals, the table and the picker
+  but not on the map. The worldwide figures are summed over every WHO country,
+  mapped or not, and match WHO's own.

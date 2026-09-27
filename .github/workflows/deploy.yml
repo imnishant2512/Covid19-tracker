@@ -30,6 +30,15 @@ on:
         required: false
         type: string
         default: ""
+      latest-only:
+        description: >-
+          Skip the deploy if main has moved past this commit. Every commit on
+          main deploys itself, so an older one finishing last would otherwise
+          overwrite newer figures on the live site.
+        required: false
+        type: boolean
+        default: true
+  # A manual run deploys whatever it is pointed at, which is how to roll back.
   workflow_dispatch:
 
 jobs:
@@ -37,22 +46,49 @@ jobs:
     name: Build and deploy to Firebase Hosting
     runs-on: ubuntu-latest
 
+    # One deploy at a time, so the superseded check below cannot pass for two
+    # runs at once and leave whichever finishes last on the live site.
+    concurrency:
+      group: firebase-hosting
+      cancel-in-progress: false
+
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref || github.sha }}
 
-      - uses: actions/setup-node@v4
+      - name: Check this is still the newest commit on main
+        id: current
+        env:
+          LATEST_ONLY: ${{ inputs.latest-only }}
+        run: |
+          BUILDING=$(git rev-parse HEAD)
+          MAIN=$(git ls-remote origin refs/heads/main | cut -f1)
+
+          if [ "$LATEST_ONLY" = "true" ] && [ "$BUILDING" != "$MAIN" ]; then
+            echo "main is at $MAIN, past $BUILDING; its own run will deploy it."
+            echo "::notice::Skipped: superseded by $MAIN"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v7
+        if: steps.current.outputs.skip != 'true'
         with:
           node-version: "24"
           cache: npm
 
-      - run: npm ci
+      - name: Install dependencies
+        if: steps.current.outputs.skip != 'true'
+        run: npm ci
 
       - name: Build
+        if: steps.current.outputs.skip != 'true'
         run: npm run build
 
       - name: Confirm the snapshot is in the build
+        if: steps.current.outputs.skip != 'true'
         env:
           EXPECTED_UPDATED: ${{ inputs.expected-updated }}
         run: |
@@ -72,6 +108,7 @@ jobs:
           "
 
       - name: Deploy
+        if: steps.current.outputs.skip != 'true'
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
@@ -86,14 +123,16 @@ jobs:
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$KEY"
           trap 'rm -f "$KEY"' EXIT
 
+          # Pinned: this runs with the service-account key in reach, so it must
+          # be a version chosen deliberately, not whatever npm serves today.
           GOOGLE_APPLICATION_CREDENTIALS="$KEY" \
-            npx --yes firebase-tools@latest deploy \
+            npx --yes firebase-tools@15.31.0 deploy \
               --only hosting \
               --project covid19-tracker-c92c2 \
               --non-interactive
 
       - name: Summary
-        if: success()
+        if: success() && steps.current.outputs.skip != 'true'
         run: |
           {
             echo "### Deployed"

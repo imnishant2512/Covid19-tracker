@@ -4,6 +4,48 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2026-09-27
+
+### Fixed
+
+- **The worldwide totals understated WHO's own figures by 1.66 million cases.**
+  Countries were kept only if the geometry source had coordinates for them,
+  which silently dropped nine WHO territories — Puerto Rico and Kosovo among
+  them — from the table, the picker and the global sums. The totals now cover
+  every WHO country (779,395,136 cases, not 777,731,794) and match WHO; the
+  nine are listed and selectable, just not drawn on the map. Selecting one
+  keeps the world view, where the previous map code would have crashed on its
+  missing coordinates.
+- **Nothing stopped a broken upstream being published.** The refresh commits
+  and deploys unattended, and its tests use fixtures, so an empty geometry
+  response or a truncated CSV would have gone live as the week's figures. The
+  data build now refuses a snapshot that is empty, goes back in time, or has
+  lost more than five countries.
+- **An older deploy could overwrite a newer one.** Every commit on `main`
+  deploys itself, and deploys could run concurrently, so a slow CI deploy
+  finishing after a data refresh put the previous week's figures back. Deploys
+  now run one at a time and skip a commit that `main` has already moved past.
+- **Failed browser tests left no evidence.** CI uploaded a Playwright report
+  that was never written, because only the GitHub reporter ran. The HTML report,
+  with traces and screenshots of any failure or retry, is now produced.
+- The docs claimed "around 80 countries still report new cases". In a typical
+  recent week it is fewer than 40; about 90 did over the past year.
+
+### Security
+
+- The deploy ran `firebase-tools@latest` with the service-account key in reach,
+  so whatever version npm served that day received it. It is now pinned.
+- `release.yml` pasted its manual `tag` input into a shell script. The input is
+  now passed through the environment and validated as a version tag.
+- `ci.yml` declares read-only repository permissions instead of inheriting the
+  repository default, and the refresh's deploy job drops write access.
+
+### Changed
+
+- GitHub Actions moved to `checkout`, `setup-node` and `upload-artifact` v7.
+  The v4 releases target Node 20, which Actions has deprecated and was
+  force-running on Node 24 with a warning on every job.
+
 ## [1.5.0] - 2026-09-26
 
 Three defects in the automation and hosting added in 1.4.0, each of which

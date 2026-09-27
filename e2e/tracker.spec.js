@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { stubApi } from "./fixtures.js";
+import { SNAPSHOT, stubApi } from "./fixtures.js";
 
 const CASES_RED = "#cc1034";
 const DEATHS_GREY = "#6c757d";
@@ -140,6 +140,27 @@ test("returns to the world view when Worldwide is reselected", async ({ page }) 
   // Regression: zoom used to stay at the country level forever.
   await expect.poll(() => tileZooms(page)).toContain(2);
   await expect.poll(() => tileZooms(page)).not.toContain(4);
+});
+
+test("handles a territory with no map coordinates", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+
+  await expect(page.locator("img.leaflet-tile").first()).toBeAttached();
+
+  // Drawn for every country that has coordinates, and none for the one without.
+  const mapped = SNAPSHOT.countries.filter((c) => c.lat != null).length;
+  await expect(page.locator(".leaflet-overlay-pane path")).toHaveCount(mapped);
+
+  await selectCountry(page, "India");
+  await expect.poll(() => tileZooms(page)).toContain(4);
+
+  await selectCountry(page, "Puerto Rico");
+  await expect(page.getByText("1.3m")).toBeVisible();
+  await expect.poll(() => tileZooms(page)).toContain(2);
+  await expect.poll(() => tileZooms(page)).not.toContain(4);
+
+  expect(errors).toEqual([]);
 });
 
 test("credits the source and the period the figures cover", async ({ page }) => {

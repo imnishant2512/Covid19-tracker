@@ -97,8 +97,8 @@ Two layers:
 
 - **Unit and component** (Vitest + Testing Library) covers the helpers, the API
   client and every component, with a regression test for each bug listed in the
-  changelog. CI enforces 85% coverage; the suite currently sits at 97.7%
-  statements across 92 specs.
+  changelog. CI enforces 85% coverage; the suite currently sits at 98.5%
+  statements across 105 specs.
 - **End-to-end** (Playwright) drives the real production bundle in Chromium,
   because jsdom cannot prove that Leaflet paints, that Chart.js reaches a
   canvas, or that the lazy chunks load. API calls and map tiles are stubbed from
@@ -158,5 +158,9 @@ Two consequences are worth knowing up front:
 
 - **WHO publishes no recovery figures**, so the original "Recovered" tab has no
   source. It is replaced by newly reported cases.
-- **WHO reports weekly**, and only around 80 countries still report new cases at
-  all. Cumulative totals cover 225 countries; recent activity is much sparser.
+- **WHO reports weekly**, and in a typical recent week fewer than 40 countries
+  report any new cases (about 90 over the past year). Cumulative totals cover
+  234 countries and territories; recent activity is much sparser.
+- **Nine territories are not on the map**, including Puerto Rico and Kosovo,
+  because the geometry source has no coordinates for them. They are still in
+  the table, the picker and the worldwide totals, which match WHO's own.

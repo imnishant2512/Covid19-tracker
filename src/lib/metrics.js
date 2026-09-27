@@ -52,10 +52,20 @@ export const METRICS = {
 
 /** @typedef {keyof typeof METRICS} MetricKey */
 /**
- * A country row from the snapshot.
- * @typedef {{code: string, name: string, lat: number, long: number, flag: string,
- *   cases: number, deaths: number, newCases: number, newDeaths: number}} Country
+ * A country row from the snapshot. `lat`, `long` and `flag` are null for the
+ * few WHO territories the geometry source does not cover.
+ * @typedef {{code: string, name: string, lat: number|null, long: number|null,
+ *   flag: string|null, cases: number, deaths: number, newCases: number,
+ *   newDeaths: number}} Country
  */
+
+/**
+ * Can this country be placed on the map?
+ *
+ * @param {{lat?: number|null, long?: number|null}} country
+ */
+export const hasCoordinates = (country) =>
+  Number.isFinite(country.lat) && Number.isFinite(country.long);
 /**
  * The generated data snapshot the app loads at runtime.
  * @typedef {{updated: string, source: string, sourceUrl: string, generatedAt: string,

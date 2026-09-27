@@ -4,7 +4,11 @@
  * @vitest-environment node
  */
 import { describe, expect, it } from "vitest";
-import { sameFigures } from "../../scripts/build-data.mjs";
+import {
+  assemble,
+  assertPlausible,
+  sameFigures,
+} from "../../scripts/build-data.mjs";
 
 const snapshot = (overrides = {}) => ({
   updated: "2026-08-09",
@@ -69,5 +73,111 @@ describe("sameFigures", () => {
     delete withoutStamp.generatedAt;
 
     expect(sameFigures(withStamp, withoutStamp)).toBe(true);
+  });
+});
+
+// WHO's column order: Date_reported, Country_code, Country, WHO_region,
+// New_cases, Cumulative_cases, New_deaths, Cumulative_deaths.
+const CSV = [
+  "Date_reported,Country_code,Country,WHO_region,New_cases,Cumulative_cases,New_deaths,Cumulative_deaths",
+  "2026-08-30,US,United States of America,AMR,10,1000,1,100",
+  "2026-09-06,US,United States of America,AMR,20,1020,2,102",
+  "2026-08-30,PR,Puerto Rico,AMR,,500,,50",
+  "2026-09-06,PR,Puerto Rico,AMR,5,505,,50",
+  '2026-09-06,XK,"Kosovo (in accordance with UN Security Council resolution 1244 (1999))",EUR,,300,,30',
+].join("\n");
+
+const GEO = [
+  { countryInfo: { iso2: "US", lat: 38, long: -97, flag: "us.png" } },
+];
+
+describe("assemble", () => {
+  it("keeps countries that have no map geometry", () => {
+    // The bug this guards: countries without geometry were dropped entirely,
+    // taking Puerto Rico, Kosovo and seven others out of the table, the picker
+    // and the worldwide totals.
+    const { countries } = assemble(CSV, GEO);
+
+    expect(countries.map((c) => c.code)).toEqual(["US", "PR", "XK"]);
+    expect(countries[1]).toMatchObject({
+      name: "Puerto Rico",
+      lat: null,
+      long: null,
+      flag: null,
+      cases: 505,
+    });
+  });
+
+  it("counts every WHO country in the worldwide totals", () => {
+    const { global } = assemble(CSV, GEO);
+
+    expect(global).toEqual({
+      cases: 1020 + 505 + 300,
+      deaths: 102 + 50 + 30,
+      newCases: 20 + 5,
+      newDeaths: 2,
+    });
+  });
+
+  it("agrees with the weekly series for the latest week", () => {
+    const { global, weeks, updated } = assemble(CSV, GEO);
+    const latest = weeks.find(([date]) => date === updated);
+
+    expect(latest).toEqual(["2026-09-06", global.newCases, global.newDeaths]);
+  });
+
+  it("keeps a quoted country name that contains commas intact", () => {
+    const kosovo = assemble(CSV, GEO).countries.find((c) => c.code === "XK");
+    expect(kosovo.name).toBe(
+      "Kosovo (in accordance with UN Security Council resolution 1244 (1999))"
+    );
+  });
+
+  it("uses the geometry where there is some", () => {
+    const us = assemble(CSV, GEO).countries.find((c) => c.code === "US");
+    expect(us).toMatchObject({ lat: 38, long: -97, flag: "us.png" });
+  });
+});
+
+describe("assertPlausible", () => {
+  const next = (overrides = {}) => ({
+    updated: "2026-09-06",
+    countries: Array.from({ length: 234 }, (_, i) => ({ code: String(i) })),
+    weeks: [["2026-09-06", 1, 0]],
+    ...overrides,
+  });
+
+  it("accepts a normal week-on-week update", () => {
+    expect(() =>
+      assertPlausible(next({ updated: "2026-08-30" }), next())
+    ).not.toThrow();
+  });
+
+  it("accepts a first snapshot with nothing to compare against", () => {
+    expect(() => assertPlausible(null, next())).not.toThrow();
+  });
+
+  it("rejects an empty snapshot", () => {
+    expect(() => assertPlausible(null, next({ countries: [] }))).toThrow(/empty/);
+    expect(() => assertPlausible(null, next({ weeks: [] }))).toThrow(/empty/);
+  });
+
+  it("rejects data that goes back in time", () => {
+    expect(() =>
+      assertPlausible(next(), next({ updated: "2026-08-30" }))
+    ).toThrow(/back in time/);
+  });
+
+  it("rejects a sudden loss of countries", () => {
+    // What an empty or partial upstream response would look like.
+    expect(() =>
+      assertPlausible(next(), next({ countries: next().countries.slice(0, 200) }))
+    ).toThrow(/34 fewer countries/);
+  });
+
+  it("tolerates a country or two coming and going", () => {
+    expect(() =>
+      assertPlausible(next(), next({ countries: next().countries.slice(0, 231) }))
+    ).not.toThrow();
   });
 });

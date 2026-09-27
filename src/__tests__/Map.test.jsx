@@ -48,6 +48,27 @@ describe("Map circles", () => {
     );
   });
 
+  it("leaves off countries that have no coordinates instead of crashing", () => {
+    // WHO lists territories the geometry source does not cover. They still
+    // belong in the totals and the table, but Leaflet throws on a null LatLng.
+    const unmapped = {
+      ...SNAPSHOT.countries[0],
+      code: "PR",
+      name: "Puerto Rico",
+      lat: null,
+      long: null,
+      flag: null,
+    };
+
+    const { container } = renderMap("cases", {
+      countries: [...SNAPSHOT.countries, unmapped],
+    });
+
+    expect(container.querySelectorAll(".leaflet-overlay-pane path")).toHaveLength(
+      SNAPSHOT.countries.length
+    );
+  });
+
   it("renders a tile layer attributing OpenStreetMap", () => {
     const { container } = renderMap();
     expect(
