@@ -4,6 +4,28 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-09-27
+
+### Fixed
+
+- **The browser tab still showed the React logo** from the original
+  create-react-app template, as did the home-screen and install icons. The
+  tracker now has its own icon, drawn once as an SVG from which the PNG and ICO
+  sizes are rendered.
+- **The two columns ended at different heights.** The map was a fixed 500px,
+  so on every desktop width it stopped 140–160px above the panel beside it,
+  leaving an empty band under the map. It now fills its column, and Leaflet is
+  told when its container resizes, since it measures only once and would
+  otherwise leave grey, untiled strips.
+- **Two colour systems side by side.** MUI used its own defaults, so in dark
+  mode the cards and the right-hand panel were a neutral grey while the map
+  frame and the table were the design tokens' blue-grey, with different corner
+  radii and shadows. MUI's theme now takes its surfaces, text colours and radius
+  from the tokens, and a test keeps the two in step. This also makes the WCAG
+  contrast check on the metric colours true of the page: it measured them
+  against the token surface, which the cards had not been using.
+- The README screenshot showed the old layout and figures.
+
 ## [1.6.0] - 2026-09-27
 
 ### Added

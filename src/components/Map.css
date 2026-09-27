@@ -1,15 +1,31 @@
+/*
+ * The map grows to fill its column, so the left column ends level with the
+ * panel beside it; at a fixed 500px it stopped 140-160px short on every
+ * desktop width. It is a flex column so Leaflet's container can take the
+ * remaining height without depending on percentage heights.
+ */
 .map {
-  height: 500px;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 500px;
   background-color: var(--surface);
   padding: var(--space-3);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   margin-top: var(--space-3);
   box-shadow: var(--shadow-card);
 }
 
 .map .leaflet-container {
-  height: 100%;
-  border-radius: var(--radius-md);
+  flex: 1 1 auto;
+  min-height: 0;
+  border-radius: var(--radius-sm);
+}
+
+@media (max-width: 700px) {
+  .map {
+    min-height: 420px;
+  }
 }
 
 .info-container {

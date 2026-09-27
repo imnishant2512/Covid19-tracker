@@ -91,6 +91,38 @@ describe("Map circles", () => {
   });
 });
 
+describe("Map sizing", () => {
+  it("re-measures when its container resizes, not only the window", () => {
+    // The map fills its column, whose height settles only after the table and
+    // chart beside it render. Leaflet measures once, so without this it kept
+    // its first size and left grey, untiled strips.
+    /** @type {Array<() => void>} */
+    const callbacks = [];
+    const observed = [];
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(callback) {
+          callbacks.push(callback);
+        }
+        observe(element) {
+          observed.push(element);
+        }
+        disconnect() {}
+      }
+    );
+    const invalidate = vi.spyOn(L.Map.prototype, "invalidateSize");
+
+    const { container } = renderMap();
+    invalidate.mockClear();
+    callbacks.forEach((callback) => callback());
+
+    expect(observed).toContain(container.querySelector(".leaflet-container"));
+    expect(invalidate).toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+});
+
 describe("Map recentring", () => {
   // react-leaflet documents MapContainer's center/zoom as immutable after mount:
   // "changing them after they have been set a first time will have no effect".

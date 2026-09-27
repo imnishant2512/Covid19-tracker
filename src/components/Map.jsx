@@ -25,6 +25,26 @@ function Recenter({ center, zoom }) {
 }
 
 /**
+ * Leaflet measures its container once, when the map is created. The container
+ * now grows with the page (it fills its column down to the panel beside it),
+ * and the panel's height settles only once the table and chart have rendered,
+ * so without this Leaflet kept its first size and left grey, untiled strips.
+ * Leaflet tracks window resizes itself, but not resizes of its own container.
+ */
+function FitToContainer() {
+  const map = useMap();
+
+  useEffect(() => {
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const observer = new ResizeObserver(() => map.invalidateSize());
+    observer.observe(map.getContainer());
+    return () => observer.disconnect();
+  }, [map]);
+
+  return null;
+}
+
+/**
  * @param {object} props
  * @param {Array<import("../lib/metrics").Country>} props.countries
  * @param {import("../lib/metrics").MetricKey} props.metric
@@ -93,6 +113,7 @@ function Map({ countries, metric, center, zoom, period = null }) {
           attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
         />
         <Recenter center={center} zoom={zoom} />
+        <FitToContainer />
         <CountryCircles countries={countries} metric={metric} period={period} />
       </MapContainer>
     </div>
