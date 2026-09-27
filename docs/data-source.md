@@ -43,7 +43,7 @@ data than the previous runtime API calls. A second file,
 weekly figures for the date filter; countries with nothing to report in the
 window are left out of it and read as zeros.
 
-`.github/workflows/refresh-data.yml` re-runs this weekly and commits the result
+`.github/workflows/refresh-data.yml` re-runs this daily and commits the result
 — then deploys it — only when the figures actually change, after verifying the
 app still lints, tests and builds. The script refuses to write a snapshot that
 is empty, goes back in time, or has lost more than a handful of countries, since
