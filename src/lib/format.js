@@ -1,8 +1,18 @@
 import numeral from "numeral";
 
-/** "1.2m" for large figures; "0" for null/undefined/0. */
-/** @param {number|null|undefined} stat */
-export const prettyPrintStat = (stat) => (stat ? numeral(stat).format("0.0a") : "0");
+/**
+ * "1.2m" for large figures, "830" below a thousand, "0" for null/undefined/0.
+ *
+ * Only abbreviated figures carry a decimal: "0.0a" alone rendered 830 deaths
+ * as "830.0", which suggests a precision a count does not have. Rare with
+ * all-time totals, common once the date filter shows a few weeks.
+ *
+ * @param {number|null|undefined} stat
+ */
+export const prettyPrintStat = (stat) => {
+  if (!stat) return "0";
+  return numeral(stat).format(Math.abs(stat) < 1000 ? "0,0" : "0.0a");
+};
 
 /** "1,234,567" — no zero padding. */
 /** @param {number|null|undefined} value */

@@ -93,10 +93,18 @@ jobs:
           EXPECTED_UPDATED: ${{ inputs.expected-updated }}
         run: |
           test -f build/data/covid-snapshot.json
+          test -f build/data/covid-history.json
           node -e "
             const s = require('./build/data/covid-snapshot.json');
             if (!s.updated || !s.countries?.length) {
               throw new Error('Snapshot is present but empty or malformed');
+            }
+            // The date filter totals countries from the history and the world
+            // from the snapshot, so the two must describe the same weeks.
+            const h = require('./build/data/covid-history.json');
+            const weeks = s.weeks.map((w) => w[0]).join();
+            if (h.weeks?.join() !== weeks) {
+              throw new Error('History weeks do not match the snapshot');
             }
             // Guards against building the wrong commit, which previously
             // published stale data while every step reported success.

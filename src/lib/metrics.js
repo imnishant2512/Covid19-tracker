@@ -29,7 +29,6 @@ export const METRICS = {
     field: "cases",
     cumulative: true,
     hex: palette.cases,
-    multiplier: 800,
     weekIndex: 1,
   },
   newCases: {
@@ -37,7 +36,6 @@ export const METRICS = {
     field: "newCases",
     cumulative: false,
     hex: palette.newCases,
-    multiplier: 6000,
     weekIndex: 1,
   },
   deaths: {
@@ -45,7 +43,6 @@ export const METRICS = {
     field: "deaths",
     cumulative: true,
     hex: palette.deaths,
-    multiplier: 2000,
     weekIndex: 2,
   },
 };
@@ -88,13 +85,19 @@ export const sortByMetric = (data, metric) =>
     (a, b) => (b[METRICS[metric].field] ?? 0) - (a[METRICS[metric].field] ?? 0)
   );
 
+/** Radius, in metres, of the largest circle on the map. */
+export const MAX_RADIUS = 2_000_000;
+
 /**
- * Circle radius in metres, scaled so small and large countries stay legible.
+ * Circle radius in metres. Area is proportional to the value, and the largest
+ * value in view is drawn at MAX_RADIUS.
  *
- * @param {Record<string, any>} country
- * @param {MetricKey} metric
+ * Scaling to the largest value, rather than by a fixed multiplier per metric,
+ * is what lets the date filter work: a fixed multiplier tuned for all-time
+ * totals drew a three-month period as dots too small to see.
+ *
+ * @param {number|null|undefined} value
+ * @param {number} max The largest value among the circles being drawn.
  */
-export const circleRadius = (country, metric) => {
-  const { field, multiplier } = METRICS[metric];
-  return Math.sqrt(Math.max(country[field] ?? 0, 0) / 10) * multiplier;
-};
+export const circleRadius = (value, max) =>
+  max > 0 ? Math.sqrt(Math.max(value ?? 0, 0) / max) * MAX_RADIUS : 0;

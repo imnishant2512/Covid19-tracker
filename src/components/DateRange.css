@@ -1,0 +1,32 @@
+.dateRange {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.dateRange__period {
+  min-width: 170px;
+  background-color: var(--surface);
+}
+
+.dateRange__week {
+  min-width: 140px;
+  background-color: var(--surface);
+}
+
+.dateRange__to {
+  color: var(--text-muted);
+}
+
+@media (max-width: 700px) {
+  .dateRange,
+  .dateRange__period {
+    width: 100%;
+  }
+
+  .dateRange__week {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}

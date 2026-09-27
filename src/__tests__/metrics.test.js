@@ -4,7 +4,7 @@
  * @vitest-environment node
  */
 import { describe, expect, it } from "vitest";
-import { METRICS, circleRadius, sortByMetric } from "../lib/metrics";
+import { MAX_RADIUS, METRICS, circleRadius, sortByMetric } from "../lib/metrics";
 import { formatNumber, prettyPrintStat } from "../lib/format";
 import { buildChartData } from "../lib/chart";
 import { withAlpha } from "../theme";
@@ -45,6 +45,13 @@ describe("prettyPrintStat", () => {
   it("abbreviates large values", () => {
     expect(prettyPrintStat(1200000)).toBe("1.2m");
     expect(prettyPrintStat(45056221)).toBe("45.1m");
+  });
+
+  it("shows counts below a thousand as whole numbers", () => {
+    expect(prettyPrintStat(830)).toBe("830");
+    expect(prettyPrintStat(13)).toBe("13");
+    expect(prettyPrintStat(999)).toBe("999");
+    expect(prettyPrintStat(1000)).toBe("1.0k");
   });
 
   it("renders 0 for missing values", () => {
@@ -101,16 +108,26 @@ describe("buildChartData", () => {
 });
 
 describe("circleRadius", () => {
-  it("scales with the selected metric", () => {
-    const country = { cases: 1000, deaths: 10, newCases: 5 };
-    expect(circleRadius(country, "cases")).toBeGreaterThan(
-      circleRadius(country, "deaths")
-    );
+  it("draws the largest value in view at the maximum radius", () => {
+    expect(circleRadius(103_436_829, 103_436_829)).toBe(MAX_RADIUS);
   });
 
-  it("never returns NaN for missing or negative counts", () => {
-    expect(circleRadius({}, "cases")).toBe(0);
-    expect(circleRadius({ cases: -5 }, "cases")).toBe(0);
+  it("makes area, not radius, proportional to the value", () => {
+    // A quarter of the value is half the radius, so a quarter of the area.
+    expect(circleRadius(25, 100)).toBeCloseTo(MAX_RADIUS / 2);
+  });
+
+  it("scales to the values in view, not to a fixed multiplier", () => {
+    // The regression this guards: fixed multipliers tuned for all-time totals
+    // drew a three-month period as dots too small to see. The largest circle
+    // is now the same size whatever the period.
+    expect(circleRadius(50_000, 50_000)).toBe(circleRadius(103_436_829, 103_436_829));
+  });
+
+  it("never returns NaN for missing, negative or empty values", () => {
+    expect(circleRadius(undefined, 100)).toBe(0);
+    expect(circleRadius(-5, 100)).toBe(0);
+    expect(circleRadius(0, 0)).toBe(0);
   });
 });
 

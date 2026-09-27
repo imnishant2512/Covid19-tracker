@@ -69,6 +69,20 @@ describe("Map circles", () => {
     );
   });
 
+  it("draws no circle for a country with nothing to show", () => {
+    // A zero-radius circle still draws its outline, so over a short period the
+    // map filled with points that each read as "cases here".
+    const quiet = { ...SNAPSHOT.countries[0], code: "QQ", newCases: 0 };
+
+    const { container } = renderMap("newCases", {
+      countries: [...SNAPSHOT.countries, quiet],
+    });
+
+    expect(container.querySelectorAll(".leaflet-overlay-pane path")).toHaveLength(
+      SNAPSHOT.countries.filter((country) => country.newCases > 0).length
+    );
+  });
+
   it("renders a tile layer attributing OpenStreetMap", () => {
     const { container } = renderMap();
     expect(

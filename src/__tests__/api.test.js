@@ -4,7 +4,7 @@
  * @vitest-environment node
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchSnapshot, isAbort } from "../api";
+import { fetchHistory, fetchSnapshot, isAbort } from "../api";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -69,5 +69,25 @@ describe("isAbort", () => {
     expect(isAbort(abort)).toBe(true);
     expect(isAbort(new Error("network down"))).toBe(false);
     expect(isAbort(undefined)).toBe(false);
+  });
+});
+
+describe("fetchHistory", () => {
+  it("throws on a non-2xx response", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: false, status: 404, json: async () => ({}) })
+    );
+
+    await expect(fetchHistory()).rejects.toThrow(/weekly history \(404\)/);
+  });
+
+  it("requests the history file, not the snapshot", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await fetchHistory();
+
+    expect(fetchMock.mock.calls[0][0]).toMatch(/data\/covid-history\.json$/);
   });
 });
