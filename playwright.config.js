@@ -16,7 +16,9 @@ export default defineConfig({
 
   use: {
     baseURL: `http://localhost:${PORT}`,
-    trace: "on-first-retry",
+    // Local runs never retry, so "on-first-retry" alone meant a local failure
+    // left no trace behind — which is how a one-off failure went undiagnosed.
+    trace: process.env.CI ? "on-first-retry" : "retain-on-failure",
     screenshot: "only-on-failure",
   },
 
